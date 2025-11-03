@@ -1,20 +1,32 @@
-# Travel Search App
+# 🌍 Travel Search App
 
-Full-stack demo app (Node + React + MUI)
+A **full-stack travel planning app** built with **React + Node.js + Material UI**.  
+Search, filter, and add trips — all running locally or in the cloud.
 
-- Backend: Express on :3000
-- Frontend: Vite React on :3001
+---
 
-## Run locally
+## 🚀 Tech Stack
 
+| Layer | Technology |
+|:------|:------------|
+| **Frontend** | React (Vite) + Material UI |
+| **Backend**  | Node.js + Express |
+| **HTTP Client** | Axios |
+| **Dev Tools** | Concurrently, Nodemon |
+| **Language** | JavaScript (ES Modules) |
+
+---
+
+## 🖼️ Demo Screenshot
+
+> _(Add your screenshot here later, e.g. `/assets/demo.png`)_  
+> When running locally, open [http://localhost:3001](http://localhost:3001).
+
+---
+
+## ⚙️ Local Setup
+
+### 1️⃣ Clone the repo
 ```bash
-# 1) install root tool
-cd server && npm install && cd ..
-cd client && npm install && cd ..
-npm install
-
-# 2) run both (backend+frontend)
-npm run start
-```
-
-Open http://localhost:3001
+git clone https://github.com/dimanya/travel-search-app.git
+cd travel-search-app
