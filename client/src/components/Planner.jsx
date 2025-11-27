@@ -19,6 +19,7 @@ import { api } from '../api';
 const TP_SHMARKER = import.meta.env.VITE_TP_SHMARKER || '';
 const TP_PROMO_ID = import.meta.env.VITE_TP_PROMO_ID || '7879'; // универсальный промо Travelpayouts/Aviasales
 const BOOKING_AID = import.meta.env.VITE_BOOKING_AID || '';
+const TP_FLIGHTS_URL = import.meta.env.VITE_TP_FLIGHTS_URL || '';
 
 const cityToIata = (city) => {
   const map = {
@@ -37,20 +38,12 @@ const cityToIata = (city) => {
 const mapsLink = (q) =>
   `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 
-const flightsLink = (fromCity, toCity, dateStr = '') => {
-  const origin = cityToIata(fromCity || 'Los Angeles');
-  const dest = cityToIata(toCity || 'New York');
-  const base = 'https://tp.media/click';
-  const params = new URLSearchParams({
-    shmarker: TP_SHMARKER,
-    promo_id: TP_PROMO_ID,
-    source_type: 'metasearch',
-    origin_iata: origin,
-    destination_iata: dest,
-    depart_date: dateStr || '',
-    adults: '1',
-  });
-  return `${base}?${params.toString()}`;
+const flightsLink = () => {
+  // Если в .env прописана своя партнёрская ссылка Aviasales — используем её
+  if (TP_FLIGHTS_URL) return TP_FLIGHTS_URL;
+
+  // запасной вариант (если вдруг .env пустой)
+  return 'https://www.aviasales.com/?marker=681967';
 };
 
 const hotelsLink = (city) => {
@@ -182,15 +175,12 @@ export default function Planner() {
                       Google Maps
                     </Button>
                     <Button
-                      variant="outlined"
-                      href={flightsLink(form.origin, d?.city, form.date)}
-                      target="_blank"
-                      title={
-                        TP_SHMARKER ? '' : 'Добавь VITE_TP_SHMARKER в client/.env для трекинга комиссий'
-                      }
-                    >
-                      Билеты
-                    </Button>
+  variant="outlined"
+  href={flightsLink()}
+  target="_blank"
+>
+  Билеты
+</Button>
                     <Button
                       variant="outlined"
                       href={hotelsLink(d?.city || '')}
