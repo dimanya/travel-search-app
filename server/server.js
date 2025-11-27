@@ -6,13 +6,21 @@ import OpenAI from 'openai';
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
 
-app.use(cors({
-  origin: ['http://localhost:3001'],
-  methods: ['GET','POST','OPTIONS'],
-  allowedHeaders: ['Content-Type']
-}));
+// Render (и любой хостинг) сам подставляет PORT через переменную окружения
+const PORT = process.env.PORT || 3000;
+
+// Разрешённый фронтенд-домен: в .env локально — localhost,
+// в проде — домен Vercel
+const ALLOWED_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:3001';
+
+app.use(
+  cors({
+    origin: ALLOWED_ORIGIN,
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type'],
+  })
+);
 app.use(express.json());
 
 // ===== Demo storage for trips =====
