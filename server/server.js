@@ -6,21 +6,31 @@ import OpenAI from 'openai';
 dotenv.config();
 
 const app = express();
+const PORT = 3000;
 
-// Render (и любой хостинг) сам подставляет PORT через переменную окружения
-const PORT = process.env.PORT || 3000;
+// список разрешённых доменов из ENV, плюс localhost по умолчанию
+const allowedOrigins = (
+  process.env.CORS_ORIGIN ||
+  'http://localhost:3001'
+).split(',')
+  .map(o => o.trim())
+  .filter(Boolean);
 
-// Разрешённый фронтенд-домен: в .env локально — localhost,
-// в проде — домен Vercel
-const ALLOWED_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:3001';
+app.use(cors({
+  origin(origin, callback) {
+    // запросы без Origin (например, curl) разрешаем
+    if (!origin) return callback(null, true);
 
-app.use(
-  cors({
-    origin: ALLOWED_ORIGIN,
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type'],
-  })
-);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    console.warn('CORS blocked origin:', origin);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type'],
+}));
+
 app.use(express.json());
 
 // ===== Demo storage for trips =====
