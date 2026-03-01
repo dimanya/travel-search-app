@@ -74,12 +74,18 @@ app.get('/api/trips', async (req, res) => {
     }
 
     const body = await resp.json();
+    const fmtDate = (iso) => {
+      if (!iso) return null;
+      const d = new Date(iso);
+      return d.toISOString().slice(0, 10); // "2026-05-09"
+    };
+
     const data = (body.data || []).map((t, i) => ({
       id: i + 1,
       from: t.origin || from?.toUpperCase() || '—',
       to: t.destination || to?.toUpperCase() || '—',
-      date: t.departure_at || '—',
-      returnDate: t.return_at || null,
+      date: fmtDate(t.departure_at) || '—',
+      returnDate: fmtDate(t.return_at),
       price: t.price ?? 0,
       airline: t.airline || '—',
       transfers: t.transfers ?? 0,
@@ -97,10 +103,14 @@ app.get('/api/trips', async (req, res) => {
 function buildAviasalesLink(ticket, from, to) {
   const origin = (ticket.origin || from || '').toUpperCase();
   const dest = (ticket.destination || to || '').toUpperCase();
-  const dep = (ticket.departure_at || '').replace(/-/g, '');
-  const ret = (ticket.return_at || '').replace(/-/g, '');
-  const route = ret
-    ? `${origin}${dep}${dest}${ret}`
+  // Extract DDMM from departure date (e.g. "2026-05-09T22:07:00-07:00" → "0905")
+  const depDate = ticket.departure_at ? new Date(ticket.departure_at) : null;
+  const retDate = ticket.return_at ? new Date(ticket.return_at) : null;
+  const fmt = (d) => String(d.getDate()).padStart(2, '0') + String(d.getMonth() + 1).padStart(2, '0');
+  if (!depDate) return `https://www.aviasales.com/?marker=${TP_MARKER}`;
+  const dep = fmt(depDate);
+  const route = retDate
+    ? `${origin}${dep}${dest}${fmt(retDate)}`
     : `${origin}${dep}${dest}1`;
   return `https://www.aviasales.com/search/${route}?marker=${TP_MARKER}`;
 }
