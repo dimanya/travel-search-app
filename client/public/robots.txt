@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://travel-search-app.vercel.app/sitemap.xml
