@@ -6,61 +6,153 @@ import OpenAI from 'openai';
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-// список разрешённых доменов из ENV, плюс localhost по умолчанию
+/* ───── CORS ───── */
 const allowedOrigins = (
-  process.env.CORS_ORIGIN ||
-  'http://localhost:3001'
-).split(',')
-  .map(o => o.trim())
+  process.env.CORS_ORIGIN || 'http://localhost:3001'
+)
+  .split(',')
+  .map((o) => o.trim())
   .filter(Boolean);
 
-app.use(cors({
-  origin(origin, callback) {
-    // запросы без Origin (например, curl) разрешаем
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    console.warn('CORS blocked origin:', origin);
-    return callback(new Error('Not allowed by CORS'));
-  },
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type'],
-}));
+app.use(
+  cors({
+    origin(origin, cb) {
+      if (!origin) return cb(null, true);
+      if (allowedOrigins.includes(origin)) return cb(null, true);
+      console.warn('CORS blocked:', origin);
+      return cb(new Error('Not allowed by CORS'));
+    },
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type'],
+  }),
+);
 
 app.use(express.json());
 
-// ===== Demo storage for trips =====
-let trips = [
-  { id: 1, from: 'LAX', to: 'JFK', date: '2025-11-05', price: 199 },
-  { id: 2, from: 'SFO', to: 'SEA', date: '2025-11-10', price: 89 }
+/* ───── Travelpayouts config ───── */
+const TP_TOKEN = process.env.TRAVELPAYOUTS_TOKEN || '';
+const TP_MARKER = process.env.TRAVELPAYOUTS_MARKER || '681967';
+const TP_BASE = 'https://api.travelpayouts.com/aviasales/v3';
+
+/* ───── Demo fallback data ───── */
+const DEMO_TRIPS = [
+  { id: 1, from: 'LAX', to: 'JFK', date: '2025-11-05', price: 199, airline: 'Demo', link: null },
+  { id: 2, from: 'SFO', to: 'SEA', date: '2025-11-10', price: 89, airline: 'Demo', link: null },
 ];
 
-// ----- API: list trips -----
-app.get('/api/trips', (req, res) => {
-  const { from, to } = req.query;
-  let result = trips;
-  if (from) result = result.filter(t => t.from.toLowerCase() === String(from).toLowerCase());
-  if (to)   result = result.filter(t => t.to.toLowerCase() === String(to).toLowerCase());
-  res.json(result);
+/* ───── API: search flights ───── */
+app.get('/api/trips', async (req, res) => {
+  const { from, to, date } = req.query;
+
+  // If no Travelpayouts token or no search params → return demo
+  if (!TP_TOKEN || (!from && !to)) {
+    let result = DEMO_TRIPS;
+    if (from) result = result.filter((t) => t.from.toLowerCase() === String(from).toLowerCase());
+    if (to) result = result.filter((t) => t.to.toLowerCase() === String(to).toLowerCase());
+    return res.json(result);
+  }
+
+  try {
+    const params = new URLSearchParams({
+      currency: 'usd',
+      token: TP_TOKEN,
+      limit: '30',
+      sorting: 'price',
+    });
+    if (from) params.set('origin', from.toUpperCase());
+    if (to) params.set('destination', to.toUpperCase());
+    if (date) params.set('departure_at', date);
+
+    const url = `${TP_BASE}/prices_for_dates?${params}`;
+    const resp = await fetch(url);
+
+    if (!resp.ok) {
+      console.error('Travelpayouts error:', resp.status, await resp.text());
+      return res.json(DEMO_TRIPS);
+    }
+
+    const body = await resp.json();
+    const data = (body.data || []).map((t, i) => ({
+      id: i + 1,
+      from: t.origin || from?.toUpperCase() || '—',
+      to: t.destination || to?.toUpperCase() || '—',
+      date: t.departure_at || '—',
+      returnDate: t.return_at || null,
+      price: t.price ?? 0,
+      airline: t.airline || '—',
+      transfers: t.transfers ?? 0,
+      // Партнёрская ссылка Aviasales с маркером
+      link: buildAviasalesLink(t, from, to),
+    }));
+
+    return res.json(data);
+  } catch (err) {
+    console.error('Travelpayouts fetch failed:', err.message);
+    return res.json(DEMO_TRIPS);
+  }
 });
 
-// ----- API: add trip -----
+function buildAviasalesLink(ticket, from, to) {
+  const origin = (ticket.origin || from || '').toUpperCase();
+  const dest = (ticket.destination || to || '').toUpperCase();
+  const dep = (ticket.departure_at || '').replace(/-/g, '');
+  const ret = (ticket.return_at || '').replace(/-/g, '');
+  const route = ret
+    ? `${origin}${dep}${dest}${ret}`
+    : `${origin}${dep}${dest}1`;
+  return `https://www.aviasales.com/search/${route}?marker=${TP_MARKER}`;
+}
+
+/* ───── API: add trip (kept for sandbox) ───── */
+let customTrips = [];
 app.post('/api/trips', (req, res) => {
   const { from, to, date, price } = req.body || {};
   if (!from || !to || !date || typeof price !== 'number') {
     return res.status(400).json({ error: 'from, to, date, price (number) обязательны' });
   }
-  const id = trips.length ? Math.max(...trips.map(t => t.id)) + 1 : 1;
-  const trip = { id, from, to, date, price };
-  trips.push(trip);
+  const id = customTrips.length ? Math.max(...customTrips.map((t) => t.id)) + 1 : 1;
+  const trip = { id, from, to, date, price, airline: 'Custom', link: null };
+  customTrips.push(trip);
   res.status(201).json(trip);
 });
 
-// ===== AI Planner (OpenAI + fallback) =====
+/* ───── Analytics: track affiliate clicks ───── */
+const clickLog = [];
+app.post('/api/track-click', (req, res) => {
+  const { type, destination, origin, price, timestamp } = req.body || {};
+  const entry = {
+    type: type || 'unknown', // 'flights' | 'hotels' | 'maps'
+    destination: destination || '',
+    origin: origin || '',
+    price: price || null,
+    timestamp: timestamp || new Date().toISOString(),
+    ip: req.headers['x-forwarded-for'] || req.ip,
+    ua: req.headers['user-agent'] || '',
+  };
+  clickLog.push(entry);
+  // Keep last 10000 entries in memory
+  if (clickLog.length > 10000) clickLog.splice(0, clickLog.length - 10000);
+  console.log('CLICK:', entry.type, entry.destination);
+  res.json({ ok: true });
+});
+
+app.get('/api/stats', (req, res) => {
+  const summary = {
+    totalClicks: clickLog.length,
+    byType: {},
+    last24h: 0,
+  };
+  const oneDayAgo = Date.now() - 86400000;
+  for (const c of clickLog) {
+    summary.byType[c.type] = (summary.byType[c.type] || 0) + 1;
+    if (new Date(c.timestamp).getTime() > oneDayAgo) summary.last24h++;
+  }
+  res.json(summary);
+});
+
+/* ───── AI Planner (OpenAI + fallback) ───── */
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 function demoPlan({ origin = 'Los Angeles', days = 3 }) {
@@ -75,23 +167,27 @@ function demoPlan({ origin = 'Los Angeles', days = 3 }) {
         { time: '09:00', name: 'Завтрак', note: 'Кафе у океана', estCost: 15 },
         { time: '11:00', name: 'Пляж / прогулка', note: 'Берём воду и крем' },
         { time: '15:00', name: 'Обед', note: 'Фиш-тако', estCost: 18 },
-        { time: '19:00', name: 'Закат', note: 'Смотровая площадка' }
+        { time: '19:00', name: 'Закат', note: 'Смотровая площадка' },
       ],
-      estDailyCost: 60
+      estDailyCost: 60,
     };
   });
   return {
     title: `Маршрут на ${days} дня из ${origin}`,
     days: planDays,
     totalEstimatedCost: planDays.reduce((s, d) => s + (d.estDailyCost || 0), 0),
-    tips: ['Бронируй отели заранее', 'Смотри трафик по времени', 'Удобная обувь обязательна']
+    tips: ['Бронируй отели заранее', 'Смотри трафик по времени', 'Удобная обувь обязательна'],
   };
 }
 
 app.post('/api/plan', async (req, res) => {
-  const { origin = 'Los Angeles', days = 3, budget = 'medium', interests = 'beaches, food' } = req.body || {};
+  const {
+    origin = 'Los Angeles',
+    days = 3,
+    budget = 'medium',
+    interests = 'beaches, food',
+  } = req.body || {};
 
-  // Принудительный демо-режим (на случай отсутствия квоты или для презентации)
   if (String(process.env.USE_DEMO_PLAN || '').toLowerCase() === 'true') {
     return res.json(demoPlan({ origin, days }));
   }
@@ -105,10 +201,13 @@ app.post('/api/plan', async (req, res) => {
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
-        { role: 'system', content: 'You are a helpful travel planner. Respond ONLY with JSON, no markdown.' },
-        { role: 'user', content: userPrompt }
+        {
+          role: 'system',
+          content: 'You are a helpful travel planner. Respond ONLY with JSON, no markdown.',
+        },
+        { role: 'user', content: userPrompt },
       ],
-      response_format: { type: 'json_object' } // мягкий формат вместо json_schema
+      response_format: { type: 'json_object' },
     });
 
     const content = completion.choices?.[0]?.message?.content || '{}';
@@ -120,14 +219,12 @@ app.post('/api/plan', async (req, res) => {
       return res.json(demoPlan({ origin, days }));
     }
     if (!json || !json.title || !Array.isArray(json.days)) {
-      console.warn('AI returned unexpected shape, content=', content);
+      console.warn('AI returned unexpected shape');
       return res.json(demoPlan({ origin, days }));
     }
     return res.json(json);
   } catch (err) {
-    const status = err?.status || err?.response?.status;
-    console.error('AI_PLAN_FAILED', status, err?.message);
-    // Fallback, чтобы UI всегда получал план
+    console.error('AI_PLAN_FAILED', err?.status, err?.message);
     return res.json(demoPlan({ origin, days }));
   }
 });

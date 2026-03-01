@@ -28,17 +28,17 @@ import { api } from './api';
 export default function App() {
   const [rows, setRows] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
-  const [filters, setFilters] = React.useState({ from: '', to: '' });
+  const [filters, setFilters] = React.useState({ from: '', to: '', date: '' });
   const [openAdd, setOpenAdd] = React.useState(false);
   const [tab, setTab] = React.useState(0);
 
-  // загрузка списка поездок
   const fetchTrips = async () => {
     setLoading(true);
     try {
       const params = {};
       if (filters.from) params.from = filters.from;
       if (filters.to) params.to = filters.to;
+      if (filters.date) params.date = filters.date;
       const { data } = await api.get('/api/trips', { params });
       setRows(data);
     } catch (e) {
@@ -49,7 +49,6 @@ export default function App() {
     }
   };
 
-  // добавление новой поездки
   const handleAdd = async (trip) => {
     try {
       setLoading(true);
@@ -70,7 +69,6 @@ export default function App() {
 
   return (
     <>
-      {/* Верхняя панель */}
       <AppBar
         position="sticky"
         color="default"
@@ -90,19 +88,18 @@ export default function App() {
         </Toolbar>
       </AppBar>
 
-      {/* Основной контент */}
       <Container maxWidth="md" sx={{ py: 4 }}>
         <Alert severity="info" sx={{ mb: 2 }}>
           Travel Search App — beta версия. Маршруты и цены примерные, проверяйте детали перед
           бронированием.
         </Alert>
 
-                <Typography variant="h5" sx={{ mb: 1.5 }}>
+        <Typography variant="h5" sx={{ mb: 1.5 }}>
           Найди идеальную поездку
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          На вкладке Search — тестовый поиск и список поездок. На вкладке AI Planner — умный маршрут
-          и примерная смета.
+          На вкладке Search — поиск реальных рейсов. На вкладке AI Planner — умный маршрут и
+          примерная смета.
         </Typography>
 
         <Tabs
@@ -114,13 +111,12 @@ export default function App() {
           <Tab label="AI Planner" />
         </Tabs>
 
-                {/* Вкладка SEARCH */}
         {tab === 0 && (
           <Box sx={{ mt: 1 }}>
             <Card elevation={2} sx={{ mb: 3 }}>
               <CardHeader
-                title="Flight Sandbox Search"
-                subheader="Тестовый поиск рейсов: отфильтруй список и добавляй свои поездки вручную."
+                title="Поиск рейсов"
+                subheader="Введи аэропорты (IATA-коды: LAX, JFK, SVO...) и дату вылета"
               />
               <CardContent>
                 <Stack
@@ -130,30 +126,31 @@ export default function App() {
                   sx={{ mb: 2 }}
                 >
                   <TextField
-                    label="From"
+                    label="Откуда (IATA)"
                     size="small"
+                    placeholder="LAX"
                     value={filters.from}
                     onChange={(e) => setFilters((f) => ({ ...f, from: e.target.value }))}
                   />
                   <TextField
-                    label="To"
+                    label="Куда (IATA)"
                     size="small"
+                    placeholder="JFK"
                     value={filters.to}
                     onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))}
                   />
-                  <Button
-                    variant="contained"
-                    onClick={fetchTrips}
+                  <TextField
+                    label="Дата вылета"
+                    type="date"
                     size="small"
-                    sx={{ px: 3 }}
-                  >
+                    value={filters.date}
+                    onChange={(e) => setFilters((f) => ({ ...f, date: e.target.value }))}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                  <Button variant="contained" onClick={fetchTrips} size="small" sx={{ px: 3 }}>
                     Поиск
                   </Button>
-                  <Button
-                    variant="outlined"
-                    onClick={() => setOpenAdd(true)}
-                    size="small"
-                  >
+                  <Button variant="outlined" onClick={() => setOpenAdd(true)} size="small">
                     Добавить
                   </Button>
                 </Stack>
@@ -178,7 +175,6 @@ export default function App() {
           </Box>
         )}
 
-        {/* Вкладка AI Planner */}
         {tab === 1 && <Planner />}
       </Container>
     </>

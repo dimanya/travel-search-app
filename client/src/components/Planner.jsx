@@ -21,20 +21,26 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
 import HotelIcon from '@mui/icons-material/Hotel';
 import MapIcon from '@mui/icons-material/Map';
-import { api } from '../api';
+import { api, trackClick } from '../api';
 
 /* ========= Affiliate & links helpers ========= */
-const TP_FLIGHTS_URL =
-  import.meta.env.VITE_TP_FLIGHTS_URL ||
-  'https://www.aviasales.com/?marker=681967.Zz5de59a4e77234235b0b456b-681967';
+const TP_MARKER = import.meta.env.VITE_TP_MARKER || '681967';
+const BOOKING_AID = import.meta.env.VITE_BOOKING_AID || '';
 
 const mapsLink = (q) =>
   `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q || '')}`;
 
-const flightsLink = () => TP_FLIGHTS_URL || 'https://www.aviasales.com/';
+const flightsLink = (origin, dest) => {
+  if (origin && dest) {
+    return `https://www.aviasales.com/search/${encodeURIComponent(origin)}${encodeURIComponent(dest)}1?marker=${TP_MARKER}`;
+  }
+  return `https://www.aviasales.com/?marker=${TP_MARKER}`;
+};
 
-const hotelsLink = (city) =>
-  `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(city || '')}`;
+const hotelsLink = (city) => {
+  const base = `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(city || '')}`;
+  return BOOKING_AID ? `${base}&aid=${BOOKING_AID}` : base;
+};
 /* ============================================ */
 
 export default function Planner() {
@@ -72,8 +78,7 @@ export default function Planner() {
     } catch (e) {
       console.error(e);
       const serverMsg = e?.response?.data?.error || e?.response?.data?.details;
-      const msg = serverMsg || e?.message || 'Не удалось сгенерировать маршрут. Повторите позже.';
-      setError(msg);
+      setError(serverMsg || e?.message || 'Не удалось сгенерировать маршрут. Повторите позже.');
     } finally {
       setLoading(false);
     }
@@ -123,22 +128,27 @@ export default function Planner() {
     }
   };
 
+  const handleFlightsClick = (city) => {
+    trackClick({ type: 'flights', origin: form.origin, destination: city });
+  };
+
+  const handleHotelsClick = (city) => {
+    trackClick({ type: 'hotels', destination: city });
+  };
+
+  const handleMapsClick = (city) => {
+    trackClick({ type: 'maps', destination: city });
+  };
+
   return (
     <Stack spacing={2}>
-      <Card
-        elevation={2}
-        sx={{
-          borderRadius: 3,
-          overflow: 'hidden',
-        }}
-      >
+      <Card elevation={2} sx={{ borderRadius: 3, overflow: 'hidden' }}>
         <CardHeader
           title="AI Travel Planner"
           subheader="Сгенерируй маршрут и примерную смету с помощью AI"
           sx={{ pb: 0.5 }}
         />
         <CardContent sx={{ pt: 1.5 }}>
-          {/* Верхняя форма */}
           <Stack
             direction={{ xs: 'column', md: 'row' }}
             spacing={2}
@@ -196,7 +206,6 @@ export default function Planner() {
               </Stack>
             </Stack>
 
-            {/* Кнопка справа */}
             <Button
               variant="contained"
               onClick={requestPlan}
@@ -233,7 +242,6 @@ export default function Planner() {
         </CardContent>
       </Card>
 
-      {/* Лоадер / результат */}
       {loading && (
         <Stack alignItems="center" sx={{ mt: 2 }}>
           <CircularProgress />
@@ -303,15 +311,17 @@ export default function Planner() {
                       href={mapsLink(d?.city)}
                       target="_blank"
                       size="small"
+                      onClick={() => handleMapsClick(d?.city)}
                     >
                       Google Maps
                     </Button>
                     <Button
                       variant="outlined"
                       startIcon={<FlightTakeoffIcon />}
-                      href={flightsLink()}
+                      href={flightsLink(form.origin, d?.city)}
                       target="_blank"
                       size="small"
+                      onClick={() => handleFlightsClick(d?.city)}
                     >
                       Билеты
                     </Button>
@@ -321,6 +331,7 @@ export default function Planner() {
                       href={hotelsLink(d?.city)}
                       target="_blank"
                       size="small"
+                      onClick={() => handleHotelsClick(d?.city)}
                     >
                       Отели
                     </Button>
