@@ -72,7 +72,7 @@ function getParamsFromUrl() {
 /* ============================================ */
 
 export default function Planner() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const urlParams = React.useMemo(() => getParamsFromUrl(), []);
 
   const [form, setForm] = React.useState({
@@ -106,6 +106,7 @@ export default function Planner() {
         budget: form.budget,
         interests: form.interests,
         date: form.date || '',
+        lang,
       });
       setPlan(data);
     } catch (e) {

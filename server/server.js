@@ -165,28 +165,35 @@ app.get('/api/stats', (req, res) => {
 /* ───── AI Planner (OpenAI + fallback) ───── */
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-function demoPlan({ origin = 'Los Angeles', days = 3 }) {
+function demoPlan({ origin = 'Los Angeles', days = 3, lang = 'ru' }) {
   const cities = ['Santa Monica', 'Malibu', 'Santa Barbara', 'San Diego', 'Palm Springs'];
+  const isEn = lang === 'en';
   const planDays = Array.from({ length: days }).map((_, i) => {
     const city = cities[i % cities.length];
     return {
       day: i + 1,
       city,
-      summary: `День ${i + 1} в ${city}: пляж, прогулки и еда.`,
+      summary: isEn
+        ? `Day ${i + 1} in ${city}: beach, walks and food.`
+        : `День ${i + 1} в ${city}: пляж, прогулки и еда.`,
       activities: [
-        { time: '09:00', name: 'Завтрак', note: 'Кафе у океана', estCost: 15 },
-        { time: '11:00', name: 'Пляж / прогулка', note: 'Берём воду и крем' },
-        { time: '15:00', name: 'Обед', note: 'Фиш-тако', estCost: 18 },
-        { time: '19:00', name: 'Закат', note: 'Смотровая площадка' },
+        { time: '09:00', name: isEn ? 'Breakfast' : 'Завтрак', note: isEn ? 'Café by the ocean' : 'Кафе у океана', estCost: 15 },
+        { time: '11:00', name: isEn ? 'Beach / walk' : 'Пляж / прогулка', note: isEn ? 'Bring water and sunscreen' : 'Берём воду и крем' },
+        { time: '15:00', name: isEn ? 'Lunch' : 'Обед', note: isEn ? 'Fish tacos' : 'Фиш-тако', estCost: 18 },
+        { time: '19:00', name: isEn ? 'Sunset' : 'Закат', note: isEn ? 'Scenic viewpoint' : 'Смотровая площадка' },
       ],
       estDailyCost: 60,
     };
   });
   return {
-    title: `Маршрут на ${days} дня из ${origin}`,
+    title: isEn
+      ? `${days}-day itinerary from ${origin}`
+      : `Маршрут на ${days} дня из ${origin}`,
     days: planDays,
     totalEstimatedCost: planDays.reduce((s, d) => s + (d.estDailyCost || 0), 0),
-    tips: ['Бронируй отели заранее', 'Смотри трафик по времени', 'Удобная обувь обязательна'],
+    tips: isEn
+      ? ['Book hotels in advance', 'Check traffic times', 'Comfortable shoes are a must']
+      : ['Бронируй отели заранее', 'Смотри трафик по времени', 'Удобная обувь обязательна'],
   };
 }
 
@@ -196,15 +203,21 @@ app.post('/api/plan', async (req, res) => {
     days = 3,
     budget = 'medium',
     interests = 'beaches, food',
+    lang = 'ru',
   } = req.body || {};
 
   if (String(process.env.USE_DEMO_PLAN || '').toLowerCase() === 'true') {
-    return res.json(demoPlan({ origin, days }));
+    return res.json(demoPlan({ origin, days, lang }));
   }
 
   try {
+    const langInstruction = lang === 'en'
+      ? 'Write all text in English.'
+      : 'Write all text in Russian (Cyrillic).';
+
     const userPrompt =
       `Create a ${days}-day travel plan starting from ${origin}. Budget: ${budget}. Interests: ${interests}. ` +
+      `${langInstruction} ` +
       `Return ONLY valid JSON with fields: {title, days:[{day,city,summary,activities:[{time,name,note,estCost}], estDailyCost}], totalEstimatedCost, tips}. ` +
       `Estimates in USD, concise summaries.`;
 
@@ -226,16 +239,16 @@ app.post('/api/plan', async (req, res) => {
       json = JSON.parse(content);
     } catch {
       console.warn('JSON parse failed, content=', content);
-      return res.json(demoPlan({ origin, days }));
+      return res.json(demoPlan({ origin, days, lang }));
     }
     if (!json || !json.title || !Array.isArray(json.days)) {
       console.warn('AI returned unexpected shape');
-      return res.json(demoPlan({ origin, days }));
+      return res.json(demoPlan({ origin, days, lang }));
     }
     return res.json(json);
   } catch (err) {
     console.error('AI_PLAN_FAILED', err?.status, err?.message);
-    return res.json(demoPlan({ origin, days }));
+    return res.json(demoPlan({ origin, days, lang }));
   }
 });
 
