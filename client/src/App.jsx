@@ -17,20 +17,28 @@ import {
   CardHeader,
   CardContent,
   Divider,
+  ToggleButtonGroup,
+  ToggleButton,
 } from '@mui/material';
 import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
+import LanguageIcon from '@mui/icons-material/Language';
 
 import TripsTable from './components/TripsTable';
 import AddTripDialog from './components/AddTripDialog';
 import Planner from './components/Planner';
 import { api } from './api';
+import { useI18n } from './i18n';
 
 export default function App() {
+  const { t, lang, setLang } = useI18n();
   const [rows, setRows] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
   const [filters, setFilters] = React.useState({ from: '', to: '', date: '' });
   const [openAdd, setOpenAdd] = React.useState(false);
-  const [tab, setTab] = React.useState(0);
+  const [tab, setTab] = React.useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('tab') === '1' ? 1 : 0;
+  });
 
   const fetchTrips = async () => {
     setLoading(true);
@@ -43,7 +51,6 @@ export default function App() {
       setRows(data);
     } catch (e) {
       console.error(e);
-      alert('Ошибка загрузки');
     } finally {
       setLoading(false);
     }
@@ -57,7 +64,6 @@ export default function App() {
       setOpenAdd(false);
     } catch (e) {
       console.error(e);
-      alert('Ошибка сохранения');
     } finally {
       setLoading(false);
     }
@@ -82,24 +88,36 @@ export default function App() {
         <Toolbar>
           <FlightTakeoffIcon sx={{ mr: 1 }} />
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            Travel Search App
+            {t.appTitle}
           </Typography>
+          <ToggleButtonGroup
+            value={lang}
+            exclusive
+            onChange={(_, v) => v && setLang(v)}
+            size="small"
+            sx={{ mr: 1 }}
+          >
+            <ToggleButton value="ru" sx={{ px: 1.2, py: 0.3, fontSize: '0.75rem' }}>
+              RU
+            </ToggleButton>
+            <ToggleButton value="en" sx={{ px: 1.2, py: 0.3, fontSize: '0.75rem' }}>
+              EN
+            </ToggleButton>
+          </ToggleButtonGroup>
           <Chip label="beta" size="small" color="primary" variant="outlined" />
         </Toolbar>
       </AppBar>
 
       <Container maxWidth="md" sx={{ py: 4 }}>
         <Alert severity="info" sx={{ mb: 2 }}>
-          Travel Search App — beta версия. Маршруты и цены примерные, проверяйте детали перед
-          бронированием.
+          {t.betaAlert}
         </Alert>
 
         <Typography variant="h5" sx={{ mb: 1.5 }}>
-          Найди идеальную поездку
+          {t.heroTitle}
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          На вкладке Search — поиск реальных рейсов. На вкладке AI Planner — умный маршрут и
-          примерная смета.
+          {t.heroSub}
         </Typography>
 
         <Tabs
@@ -107,17 +125,14 @@ export default function App() {
           onChange={(_, v) => setTab(v)}
           sx={{ mb: 3, borderBottom: '1px solid #e0e0e0' }}
         >
-          <Tab label="Search" />
-          <Tab label="AI Planner" />
+          <Tab label={t.tabSearch} />
+          <Tab label={t.tabPlanner} />
         </Tabs>
 
         {tab === 0 && (
           <Box sx={{ mt: 1 }}>
             <Card elevation={2} sx={{ mb: 3 }}>
-              <CardHeader
-                title="Поиск рейсов"
-                subheader="Введи аэропорты (IATA-коды: LAX, JFK, SVO...) и дату вылета"
-              />
+              <CardHeader title={t.searchTitle} subheader={t.searchSub} />
               <CardContent>
                 <Stack
                   direction={{ xs: 'column', sm: 'row' }}
@@ -126,21 +141,21 @@ export default function App() {
                   sx={{ mb: 2 }}
                 >
                   <TextField
-                    label="Откуда (IATA)"
+                    label={t.fromLabel}
                     size="small"
                     placeholder="LAX"
                     value={filters.from}
                     onChange={(e) => setFilters((f) => ({ ...f, from: e.target.value }))}
                   />
                   <TextField
-                    label="Куда (IATA)"
+                    label={t.toLabel}
                     size="small"
                     placeholder="JFK"
                     value={filters.to}
                     onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))}
                   />
                   <TextField
-                    label="Дата вылета"
+                    label={t.dateLabel}
                     type="date"
                     size="small"
                     value={filters.date}
@@ -148,10 +163,10 @@ export default function App() {
                     InputLabelProps={{ shrink: true }}
                   />
                   <Button variant="contained" onClick={fetchTrips} size="small" sx={{ px: 3 }}>
-                    Поиск
+                    {t.searchBtn}
                   </Button>
                   <Button variant="outlined" onClick={() => setOpenAdd(true)} size="small">
-                    Добавить
+                    {t.addBtn}
                   </Button>
                 </Stack>
 

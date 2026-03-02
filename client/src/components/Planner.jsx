@@ -15,13 +15,16 @@ import {
   Chip,
   IconButton,
   Tooltip,
+  Snackbar,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import ShareIcon from '@mui/icons-material/Share';
 import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
 import HotelIcon from '@mui/icons-material/Hotel';
 import MapIcon from '@mui/icons-material/Map';
 import { api, trackClick } from '../api';
+import { useI18n } from '../i18n';
 
 /* ========= Affiliate & links helpers ========= */
 const TP_MARKER = import.meta.env.VITE_TP_MARKER || '681967';
@@ -41,20 +44,50 @@ const hotelsLink = (city) => {
   const base = `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(city || '')}`;
   return BOOKING_AID ? `${base}&aid=${BOOKING_AID}` : base;
 };
+
+/* ========= URL sharing helpers ========= */
+function getShareUrl(form) {
+  const params = new URLSearchParams();
+  if (form.origin) params.set('origin', form.origin);
+  if (form.days) params.set('days', String(form.days));
+  if (form.budget) params.set('budget', form.budget);
+  if (form.interests) params.set('interests', form.interests);
+  if (form.date) params.set('date', form.date);
+  params.set('tab', '1');
+  params.set('auto', '1');
+  return `${window.location.origin}/?${params.toString()}`;
+}
+
+function getParamsFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    origin: params.get('origin') || '',
+    days: params.get('days') || '',
+    budget: params.get('budget') || '',
+    interests: params.get('interests') || '',
+    date: params.get('date') || '',
+    auto: params.get('auto') === '1',
+  };
+}
 /* ============================================ */
 
 export default function Planner() {
+  const { t } = useI18n();
+  const urlParams = React.useMemo(() => getParamsFromUrl(), []);
+
   const [form, setForm] = React.useState({
-    origin: 'Los Angeles',
-    days: 3,
-    budget: 'medium',
-    interests: 'beaches, food',
-    date: '',
+    origin: urlParams.origin || 'Los Angeles',
+    days: Number(urlParams.days) || 3,
+    budget: urlParams.budget || 'medium',
+    interests: urlParams.interests || 'beaches, food',
+    date: urlParams.date || '',
   });
   const [loading, setLoading] = React.useState(false);
   const [plan, setPlan] = React.useState(null);
   const [error, setError] = React.useState('');
   const [copied, setCopied] = React.useState(false);
+  const [shareSnack, setShareSnack] = React.useState(false);
+  const autoTriggered = React.useRef(false);
 
   const onChange = (e) =>
     setForm((f) => ({
@@ -62,7 +95,7 @@ export default function Planner() {
       [e.target.name]: e.target.type === 'number' ? Number(e.target.value) : e.target.value,
     }));
 
-  const requestPlan = async () => {
+  const requestPlan = React.useCallback(async () => {
     setLoading(true);
     setError('');
     setCopied(false);
@@ -82,7 +115,15 @@ export default function Planner() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [form]);
+
+  // Auto-generate plan when opened via share link
+  React.useEffect(() => {
+    if (urlParams.auto && !autoTriggered.current) {
+      autoTriggered.current = true;
+      requestPlan();
+    }
+  }, [urlParams.auto, requestPlan]);
 
   const buildPlainTextPlan = () => {
     if (!plan) return '';
@@ -128,6 +169,31 @@ export default function Planner() {
     }
   };
 
+  const handleShare = async () => {
+    const url = getShareUrl(form);
+    const shareData = {
+      title: plan?.title || 'Маршрут путешествия',
+      text: `Посмотри мой маршрут: ${plan?.title || ''}`,
+      url,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShareSnack(true);
+      }
+    } catch (e) {
+      // User cancelled share or fallback
+      if (e.name !== 'AbortError') {
+        await navigator.clipboard.writeText(url);
+        setShareSnack(true);
+      }
+    }
+    trackClick({ type: 'share', destination: form.origin });
+  };
+
   const handleFlightsClick = (city) => {
     trackClick({ type: 'flights', origin: form.origin, destination: city });
   };
@@ -144,8 +210,8 @@ export default function Planner() {
     <Stack spacing={2}>
       <Card elevation={2} sx={{ borderRadius: 3, overflow: 'hidden' }}>
         <CardHeader
-          title="AI Travel Planner"
-          subheader="Сгенерируй маршрут и примерную смету с помощью AI"
+          title={t.plannerTitle}
+          subheader={t.plannerSub}
           sx={{ pb: 0.5 }}
         />
         <CardContent sx={{ pt: 1.5 }}>
@@ -158,7 +224,7 @@ export default function Planner() {
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
                 <TextField
                   name="origin"
-                  label="Город отправления"
+                  label={t.originLabel}
                   value={form.origin}
                   onChange={onChange}
                   size="small"
@@ -167,7 +233,7 @@ export default function Planner() {
                 <TextField
                   name="days"
                   type="number"
-                  label="Дней"
+                  label={t.daysLabel}
                   value={form.days}
                   onChange={onChange}
                   size="small"
@@ -176,7 +242,7 @@ export default function Planner() {
                 />
                 <TextField
                   name="budget"
-                  label="Бюджет (low/medium/high)"
+                  label={t.budgetLabel}
                   value={form.budget}
                   onChange={onChange}
                   size="small"
@@ -187,7 +253,7 @@ export default function Planner() {
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
                 <TextField
                   name="interests"
-                  label="Интересы"
+                  label={t.interestsLabel}
                   value={form.interests}
                   onChange={onChange}
                   size="small"
@@ -196,7 +262,7 @@ export default function Planner() {
                 <TextField
                   name="date"
                   type="date"
-                  label="Дата вылета"
+                  label={t.departureDateLabel}
                   value={form.date || ''}
                   onChange={onChange}
                   size="small"
@@ -221,7 +287,7 @@ export default function Planner() {
                 alignSelf: { xs: 'stretch', md: 'flex-end' },
               }}
             >
-              {loading ? 'Генерируем...' : 'Генерировать'}
+              {loading ? t.generatingBtn : t.generateBtn}
             </Button>
           </Stack>
 
@@ -234,7 +300,7 @@ export default function Planner() {
           {copied && !error && (
             <Chip
               color="success"
-              label="Маршрут скопирован в буфер обмена"
+              label={t.copiedMsg}
               size="small"
               sx={{ mt: 2 }}
             />
@@ -265,23 +331,30 @@ export default function Planner() {
               )}
               {typeof plan?.totalEstimatedCost !== 'undefined' && (
                 <Typography variant="subtitle1">
-                  Примерная сумма: ${plan.totalEstimatedCost}
+                  {t.estimatedTotal}: ${plan.totalEstimatedCost}
                 </Typography>
               )}
             </div>
 
-            <Tooltip title="Скопировать маршрут">
-              <IconButton onClick={handleCopy}>
-                <ContentCopyIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
+            <Stack direction="row" spacing={1}>
+              <Tooltip title={t.copyRoute}>
+                <IconButton onClick={handleCopy}>
+                  <ContentCopyIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title={t.shareRoute}>
+                <IconButton onClick={handleShare} color="primary">
+                  <ShareIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Stack>
           </Stack>
 
           {Array.isArray(plan?.days) &&
             plan.days.map((d, idx) => (
               <Accordion key={d?.day || idx} disableGutters>
                 <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  День {d?.day ?? idx + 1}: {d?.city ?? '—'}
+                  {t.day} {d?.day ?? idx + 1}: {d?.city ?? '—'}
                 </AccordionSummary>
                 <AccordionDetails>
                   {d?.summary && (
@@ -323,7 +396,7 @@ export default function Planner() {
                       size="small"
                       onClick={() => handleFlightsClick(d?.city)}
                     >
-                      Билеты
+                      {t.tickets}
                     </Button>
                     <Button
                       variant="outlined"
@@ -333,7 +406,7 @@ export default function Planner() {
                       size="small"
                       onClick={() => handleHotelsClick(d?.city)}
                     >
-                      Отели
+                      {t.hotels}
                     </Button>
                   </Stack>
                 </AccordionDetails>
@@ -342,7 +415,7 @@ export default function Planner() {
 
           {Array.isArray(plan?.tips) && plan.tips.length > 0 && (
             <Card elevation={0} sx={{ border: '1px solid #eee', borderRadius: 2 }}>
-              <CardHeader title="Советы" />
+              <CardHeader title={t.tips} />
               <CardContent>
                 <ul style={{ marginTop: 0 }}>
                   {plan.tips.map((t, i) => (
@@ -354,6 +427,13 @@ export default function Planner() {
           )}
         </Stack>
       )}
+
+      <Snackbar
+        open={shareSnack}
+        autoHideDuration={3000}
+        onClose={() => setShareSnack(false)}
+        message={t.linkCopied}
+      />
     </Stack>
   );
 }

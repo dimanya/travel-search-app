@@ -12,8 +12,11 @@ import {
 } from '@mui/material';
 import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
 import { trackClick } from '../api';
+import { useI18n } from '../i18n';
 
 export default function TripsTable({ rows }) {
+  const { t } = useI18n();
+
   const handleBuy = (row) => {
     trackClick({
       type: 'flights',
@@ -28,12 +31,12 @@ export default function TripsTable({ rows }) {
       <Table size="small">
         <TableHead>
           <TableRow>
-            <TableCell>From</TableCell>
-            <TableCell>To</TableCell>
-            <TableCell>Date</TableCell>
-            <TableCell>Airline</TableCell>
-            <TableCell align="center">Transfers</TableCell>
-            <TableCell align="right">Price</TableCell>
+            <TableCell>{t.from}</TableCell>
+            <TableCell>{t.to}</TableCell>
+            <TableCell>{t.date}</TableCell>
+            <TableCell>{t.airline}</TableCell>
+            <TableCell align="center">{t.transfersCol}</TableCell>
+            <TableCell align="right">{t.price}</TableCell>
             <TableCell align="center" />
           </TableRow>
         </TableHead>
@@ -41,7 +44,7 @@ export default function TripsTable({ rows }) {
           {rows.length === 0 && (
             <TableRow>
               <TableCell colSpan={7} align="center" sx={{ py: 3, color: 'text.secondary' }}>
-                Нет результатов. Попробуй изменить фильтры.
+                {t.noResults}
               </TableCell>
             </TableRow>
           )}
@@ -54,9 +57,9 @@ export default function TripsTable({ rows }) {
               <TableCell align="center">
                 {typeof r.transfers === 'number' ? (
                   r.transfers === 0 ? (
-                    <Chip label="Прямой" size="small" color="success" variant="outlined" />
+                    <Chip label={t.direct} size="small" color="success" variant="outlined" />
                   ) : (
-                    <Chip label={`${r.transfers} пер.`} size="small" variant="outlined" />
+                    <Chip label={`${r.transfers} ${t.transfers}`} size="small" variant="outlined" />
                   )
                 ) : (
                   '—'
@@ -77,10 +80,10 @@ export default function TripsTable({ rows }) {
                     onClick={() => handleBuy(r)}
                     sx={{ textTransform: 'none', borderRadius: 999 }}
                   >
-                    Купить
+                    {t.buy}
                   </Button>
                 ) : (
-                  <Chip label="Demo" size="small" />
+                  <Chip label={t.demo} size="small" />
                 )}
               </TableCell>
             </TableRow>
