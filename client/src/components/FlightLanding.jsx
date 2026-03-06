@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useParams, Link as RouterLink } from 'react-router-dom';
+import { useParams, Link as RouterLink, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import {
   Container,
@@ -23,15 +23,17 @@ import { useI18n } from '../i18n';
 import { POPULAR_ROUTES, getRouteInfo } from '../routes-data';
 
 export default function FlightLanding() {
-  const { route } = useParams(); // e.g. "lax-jfk"
+  const { route, lang: urlLang } = useParams(); // e.g. "lax-jfk"
   const { t, lang } = useI18n();
+  const effectiveLang = (urlLang === 'ru' || urlLang === 'en') ? urlLang : lang;
+  const otherLang = effectiveLang === 'ru' ? 'en' : 'ru';
   const [rows, setRows] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
 
   const parts = (route || '').split('-');
   const from = (parts[0] || '').toUpperCase();
   const to = (parts[1] || '').toUpperCase();
-  const info = getRouteInfo(from, to, lang);
+  const info = getRouteInfo(from, to, effectiveLang);
 
   React.useEffect(() => {
     if (!from || !to) return;
@@ -44,25 +46,33 @@ export default function FlightLanding() {
   }, [from, to]);
 
   const title =
-    lang === 'ru'
+    effectiveLang === 'ru'
       ? `Дешёвые авиабилеты ${info.fromCity} → ${info.toCity} | Travel Search App`
       : `Cheap flights ${info.fromCity} → ${info.toCity} | Travel Search App`;
 
   const description =
-    lang === 'ru'
+    effectiveLang === 'ru'
       ? `Ищи дешёвые авиабилеты из ${info.fromCity} (${from}) в ${info.toCity} (${to}). Сравни цены, найди прямые рейсы и бронируй через Aviasales.`
       : `Find cheap flights from ${info.fromCity} (${from}) to ${info.toCity} (${to}). Compare prices, find direct flights and book via Aviasales.`;
+
+  const canonicalUrl = `https://travelsearch.now/${effectiveLang}/flights/${route}`;
+  const alternateUrl = `https://travelsearch.now/${otherLang}/flights/${route}`;
 
   return (
     <>
       <Helmet>
         <title>{title}</title>
         <meta name="description" content={description} />
-        <link rel="canonical" href={`https://travelsearch.now/flights/${route}`} />
+        <html lang={effectiveLang} />
+        <link rel="canonical" href={canonicalUrl} />
+        <link rel="alternate" hrefLang={effectiveLang} href={canonicalUrl} />
+        <link rel="alternate" hrefLang={otherLang} href={alternateUrl} />
+        <link rel="alternate" hrefLang="x-default" href={`https://travelsearch.now/en/flights/${route}`} />
         <meta property="og:title" content={title} />
         <meta property="og:description" content={description} />
-        <meta property="og:url" content={`https://travelsearch.now/flights/${route}`} />
+        <meta property="og:url" content={canonicalUrl} />
         <meta property="og:type" content="website" />
+        <meta property="og:locale" content={effectiveLang === 'ru' ? 'ru_RU' : 'en_US'} />
       </Helmet>
 
       <AppBar
@@ -86,7 +96,7 @@ export default function FlightLanding() {
             startIcon={<ArrowBackIcon />}
             size="small"
           >
-            {lang === 'ru' ? 'Главная' : 'Home'}
+            {effectiveLang === 'ru' ? 'Главная' : 'Home'}
           </Button>
         </Toolbar>
       </AppBar>
@@ -94,7 +104,7 @@ export default function FlightLanding() {
       <Container maxWidth="md" sx={{ py: 4 }}>
         {/* Hero SEO block */}
         <Typography variant="h4" component="h1" sx={{ mb: 1, fontWeight: 700 }}>
-          {lang === 'ru'
+          {effectiveLang === 'ru'
             ? `Авиабилеты ${info.fromCity} → ${info.toCity}`
             : `Flights ${info.fromCity} → ${info.toCity}`}
         </Typography>
@@ -113,7 +123,7 @@ export default function FlightLanding() {
               <TripsTable rows={rows} />
             ) : (
               <Typography color="text.secondary" align="center" sx={{ py: 3 }}>
-                {lang === 'ru'
+                {effectiveLang === 'ru'
                   ? 'Рейсы не найдены. Попробуйте изменить даты на главной странице.'
                   : 'No flights found. Try different dates on the main page.'}
               </Typography>
@@ -124,12 +134,12 @@ export default function FlightLanding() {
         {/* SEO content block */}
         <Box sx={{ mt: 4 }}>
           <Typography variant="h5" component="h2" sx={{ mb: 2 }}>
-            {lang === 'ru'
+            {effectiveLang === 'ru'
               ? `Как найти дешёвые билеты ${info.fromCity} — ${info.toCity}`
               : `How to find cheap flights ${info.fromCity} — ${info.toCity}`}
           </Typography>
           <Typography variant="body2" color="text.secondary" paragraph>
-            {lang === 'ru'
+            {effectiveLang === 'ru'
               ? `Маршрут ${info.fromCity} (${from}) — ${info.toCity} (${to}) — один из популярных направлений. Мы сравниваем цены от десятков авиакомпаний через Aviasales, чтобы вы могли найти самый выгодный вариант. Используйте гибкие даты для лучших цен и бронируйте заранее.`
               : `The ${info.fromCity} (${from}) to ${info.toCity} (${to}) route is one of the popular destinations. We compare prices from dozens of airlines via Aviasales so you can find the best deal. Use flexible dates for better prices and book in advance.`}
           </Typography>
@@ -137,7 +147,7 @@ export default function FlightLanding() {
           {info.tips && info.tips.length > 0 && (
             <>
               <Typography variant="h6" component="h3" sx={{ mt: 2, mb: 1 }}>
-                {lang === 'ru' ? '💡 Советы' : '💡 Tips'}
+                {effectiveLang === 'ru' ? '💡 Советы' : '💡 Tips'}
               </Typography>
               <ul>
                 {info.tips.map((tip, i) => (
@@ -153,7 +163,7 @@ export default function FlightLanding() {
         {/* Internal links to related routes */}
         <Divider sx={{ my: 4 }} />
         <Typography variant="h6" component="h3" sx={{ mb: 2 }}>
-          {lang === 'ru' ? '🔗 Популярные направления' : '🔗 Popular routes'}
+          {effectiveLang === 'ru' ? '🔗 Популярные направления' : '🔗 Popular routes'}
         </Typography>
         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
           {POPULAR_ROUTES.filter((r) => r.from !== from || r.to !== to)
@@ -163,7 +173,7 @@ export default function FlightLanding() {
                 key={`${r.from}-${r.to}`}
                 label={`${r.from} → ${r.to}`}
                 component={RouterLink}
-                to={`/flights/${r.from.toLowerCase()}-${r.to.toLowerCase()}`}
+                to={`/${effectiveLang}/flights/${r.from.toLowerCase()}-${r.to.toLowerCase()}`}
                 clickable
                 variant="outlined"
                 sx={{ mb: 1 }}

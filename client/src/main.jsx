@@ -1,10 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import App from './App';
 import FlightLanding from './components/FlightLanding';
 import RoutesIndex from './components/RoutesIndex';
+import LangWrapper from './components/LangWrapper';
 import { I18nProvider } from './i18n';
 import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
 
@@ -26,6 +27,13 @@ const theme = createTheme({
   },
 });
 
+function detectLang() {
+  const saved = localStorage.getItem('lang');
+  if (saved === 'ru' || saved === 'en') return saved;
+  const browser = navigator.language?.slice(0, 2);
+  return browser === 'ru' ? 'ru' : 'en';
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <HelmetProvider>
@@ -35,8 +43,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<App />} />
-              <Route path="/flights" element={<RoutesIndex />} />
-              <Route path="/flights/:route" element={<FlightLanding />} />
+
+              {/* Language-prefixed flight routes */}
+              <Route path="/:lang/flights" element={<LangWrapper><RoutesIndex /></LangWrapper>} />
+              <Route path="/:lang/flights/:route" element={<LangWrapper><FlightLanding /></LangWrapper>} />
+
+              {/* Legacy /flights redirects to detected lang */}
+              <Route path="/flights" element={<Navigate to={`/${detectLang()}/flights`} replace />} />
+              <Route path="/flights/:route" element={<LegacyRedirect />} />
             </Routes>
           </BrowserRouter>
         </I18nProvider>
@@ -44,3 +58,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </HelmetProvider>
   </React.StrictMode>
 );
+
+function LegacyRedirect() {
+  const route = window.location.pathname.split('/flights/')[1] || '';
+  return <Navigate to={`/${detectLang()}/flights/${route}`} replace />;
+}
