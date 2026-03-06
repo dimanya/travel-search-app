@@ -22,12 +22,14 @@ import {
 } from '@mui/material';
 import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
 import LanguageIcon from '@mui/icons-material/Language';
+import { Link as RouterLink } from 'react-router-dom';
 
 import TripsTable from './components/TripsTable';
 import AddTripDialog from './components/AddTripDialog';
 import Planner from './components/Planner';
 import { api } from './api';
 import { useI18n } from './i18n';
+import { POPULAR_ROUTES } from './routes-data';
 
 export default function App() {
   const { t, lang, setLang } = useI18n();
@@ -191,6 +193,40 @@ export default function App() {
         )}
 
         {tab === 1 && <Planner />}
+
+        {/* Popular routes — internal links for SEO */}
+        <Divider sx={{ my: 4 }} />
+        <Typography variant="h6" sx={{ mb: 1 }}>
+          {lang === 'ru' ? '✈️ Популярные направления' : '✈️ Popular Routes'}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          {lang === 'ru'
+            ? 'Дешёвые авиабилеты по популярным маршрутам'
+            : 'Cheap flights on popular routes'}
+        </Typography>
+        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
+          {POPULAR_ROUTES.map((r) => (
+            <Chip
+              key={`${r.from}-${r.to}`}
+              label={`${r.from} → ${r.to}`}
+              component={RouterLink}
+              to={`/${lang}/flights/${r.from.toLowerCase()}-${r.to.toLowerCase()}`}
+              clickable
+              variant="outlined"
+              size="small"
+              icon={<FlightTakeoffIcon />}
+              sx={{ mb: 0.5 }}
+            />
+          ))}
+        </Stack>
+        <Button
+          component={RouterLink}
+          to={`/${lang}/flights`}
+          variant="text"
+          size="small"
+        >
+          {lang === 'ru' ? 'Все направления →' : 'All routes →'}
+        </Button>
       </Container>
     </>
   );
