@@ -28,6 +28,7 @@ import TripsTable from './components/TripsTable';
 import AddTripDialog from './components/AddTripDialog';
 import Planner from './components/Planner';
 import Hotels from './components/Hotels';
+import SubscribeBlock from './components/SubscribeBlock';
 import { api } from './api';
 import { useI18n } from './i18n';
 import { POPULAR_ROUTES } from './routes-data';
@@ -198,6 +199,9 @@ export default function App() {
         {tab === 1 && <Hotels />}
 
         {tab === 2 && <Planner />}
+
+        {/* Email subscribe */}
+        <SubscribeBlock />
 
         {/* Popular routes — internal links for SEO */}
         <Divider sx={{ my: 4 }} />

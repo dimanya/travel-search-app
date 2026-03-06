@@ -162,6 +162,31 @@ app.get('/api/stats', (req, res) => {
   res.json(summary);
 });
 
+/* ───── Email subscribe ───── */
+const subscribers = new Map(); // email -> { lang, subscribedAt }
+
+app.post('/api/subscribe', (req, res) => {
+  const { email, lang } = req.body || {};
+  if (!email || !email.includes('@')) {
+    return res.status(400).json({ error: 'Invalid email' });
+  }
+  const normalized = email.trim().toLowerCase();
+  if (subscribers.has(normalized)) {
+    return res.json({ status: 'exists' });
+  }
+  subscribers.set(normalized, {
+    lang: lang || 'en',
+    subscribedAt: new Date().toISOString(),
+    ip: req.headers['x-forwarded-for'] || req.ip,
+  });
+  console.log('NEW_SUBSCRIBER:', normalized, `(total: ${subscribers.size})`);
+  res.json({ status: 'ok' });
+});
+
+app.get('/api/subscribers/count', (req, res) => {
+  res.json({ count: subscribers.size });
+});
+
 /* ───── AI Planner (OpenAI + fallback) ───── */
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
