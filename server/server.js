@@ -2,8 +2,17 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import OpenAI from 'openai';
+import { createClient } from '@supabase/supabase-js';
 
 dotenv.config();
+
+/* ───── Supabase ───── */
+const supabase = (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY)
+  ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
+  : null;
+
+if (supabase) console.log('✅ Supabase connected');
+else console.warn('⚠️  Supabase not configured — using in-memory fallback');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -129,11 +138,12 @@ app.post('/api/trips', (req, res) => {
 });
 
 /* ───── Analytics: track affiliate clicks ───── */
-const clickLog = [];
-app.post('/api/track-click', (req, res) => {
+const clickLogFallback = [];
+
+app.post('/api/track-click', async (req, res) => {
   const { type, destination, origin, price, timestamp } = req.body || {};
   const entry = {
-    type: type || 'unknown', // 'flights' | 'hotels' | 'maps'
+    type: type || 'unknown',
     destination: destination || '',
     origin: origin || '',
     price: price || null,
@@ -141,21 +151,37 @@ app.post('/api/track-click', (req, res) => {
     ip: req.headers['x-forwarded-for'] || req.ip,
     ua: req.headers['user-agent'] || '',
   };
-  clickLog.push(entry);
-  // Keep last 10000 entries in memory
-  if (clickLog.length > 10000) clickLog.splice(0, clickLog.length - 10000);
+
+  if (supabase) {
+    supabase.from('clicks').insert(entry).then(({ error }) => {
+      if (error) console.error('Click insert error:', error);
+    });
+  } else {
+    clickLogFallback.push(entry);
+    if (clickLogFallback.length > 10000) clickLogFallback.splice(0, clickLogFallback.length - 10000);
+  }
+
   console.log('CLICK:', entry.type, entry.destination);
   res.json({ ok: true });
 });
 
-app.get('/api/stats', (req, res) => {
-  const summary = {
-    totalClicks: clickLog.length,
-    byType: {},
-    last24h: 0,
-  };
+app.get('/api/stats', async (req, res) => {
+  if (supabase) {
+    const { count: totalClicks } = await supabase.from('clicks').select('*', { count: 'exact', head: true });
+    const oneDayAgo = new Date(Date.now() - 86400000).toISOString();
+    const { count: last24h } = await supabase.from('clicks').select('*', { count: 'exact', head: true }).gte('timestamp', oneDayAgo);
+    const { data: typeCounts } = await supabase.rpc('click_stats_by_type').catch(() => ({ data: null }));
+
+    return res.json({
+      totalClicks: totalClicks || 0,
+      last24h: last24h || 0,
+      byType: typeCounts || {},
+    });
+  }
+
+  const summary = { totalClicks: clickLogFallback.length, byType: {}, last24h: 0 };
   const oneDayAgo = Date.now() - 86400000;
-  for (const c of clickLog) {
+  for (const c of clickLogFallback) {
     summary.byType[c.type] = (summary.byType[c.type] || 0) + 1;
     if (new Date(c.timestamp).getTime() > oneDayAgo) summary.last24h++;
   }
@@ -163,28 +189,54 @@ app.get('/api/stats', (req, res) => {
 });
 
 /* ───── Email subscribe ───── */
-const subscribers = new Map(); // email -> { lang, subscribedAt }
+const subscribersFallback = new Map();
 
-app.post('/api/subscribe', (req, res) => {
+app.post('/api/subscribe', async (req, res) => {
   const { email, lang } = req.body || {};
   if (!email || !email.includes('@')) {
     return res.status(400).json({ error: 'Invalid email' });
   }
   const normalized = email.trim().toLowerCase();
-  if (subscribers.has(normalized)) {
+  const ip = req.headers['x-forwarded-for'] || req.ip;
+
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('subscribers')
+        .upsert({ email: normalized, lang: lang || 'en', ip }, { onConflict: 'email', ignoreDuplicates: true })
+        .select();
+
+      if (error && error.code === '23505') {
+        return res.json({ status: 'exists' });
+      }
+      if (error) {
+        console.error('Supabase subscribe error:', error);
+        return res.status(500).json({ error: 'DB error' });
+      }
+      // Check if it was a new insert or existing
+      const { count } = await supabase.from('subscribers').select('*', { count: 'exact', head: true }).eq('email', normalized);
+      console.log('NEW_SUBSCRIBER:', normalized);
+      return res.json({ status: 'ok' });
+    } catch (err) {
+      console.error('Subscribe error:', err.message);
+    }
+  }
+
+  // Fallback to in-memory
+  if (subscribersFallback.has(normalized)) {
     return res.json({ status: 'exists' });
   }
-  subscribers.set(normalized, {
-    lang: lang || 'en',
-    subscribedAt: new Date().toISOString(),
-    ip: req.headers['x-forwarded-for'] || req.ip,
-  });
-  console.log('NEW_SUBSCRIBER:', normalized, `(total: ${subscribers.size})`);
+  subscribersFallback.set(normalized, { lang: lang || 'en', subscribedAt: new Date().toISOString(), ip });
+  console.log('NEW_SUBSCRIBER (memory):', normalized);
   res.json({ status: 'ok' });
 });
 
-app.get('/api/subscribers/count', (req, res) => {
-  res.json({ count: subscribers.size });
+app.get('/api/subscribers/count', async (req, res) => {
+  if (supabase) {
+    const { count } = await supabase.from('subscribers').select('*', { count: 'exact', head: true });
+    return res.json({ count: count || 0 });
+  }
+  res.json({ count: subscribersFallback.size });
 });
 
 /* ───── AI Planner (OpenAI + fallback) ───── */
