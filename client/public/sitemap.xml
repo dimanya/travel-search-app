@@ -1,8 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://travelsearch.now/</loc>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
+  <url><loc>https://travelsearch.now/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
+  <url><loc>https://travelsearch.now/flights</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://travelsearch.now/flights/lax-jfk</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://travelsearch.now/flights/jfk-lax</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://travelsearch.now/flights/lax-sfo</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://travelsearch.now/flights/sfo-sea</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://travelsearch.now/flights/lax-mia</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://travelsearch.now/flights/ord-lax</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://travelsearch.now/flights/jfk-lhr</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://travelsearch.now/flights/lax-cdg</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://travelsearch.now/flights/svo-led</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://travelsearch.now/flights/svo-ist</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://travelsearch.now/flights/svo-dxb</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://travelsearch.now/flights/svo-ayt</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://travelsearch.now/flights/lax-nrt</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://travelsearch.now/flights/lax-bkk</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://travelsearch.now/flights/lax-cun</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://travelsearch.now/flights/mia-bog</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
 </urlset>
