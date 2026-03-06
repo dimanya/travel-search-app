@@ -27,6 +27,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import TripsTable from './components/TripsTable';
 import AddTripDialog from './components/AddTripDialog';
 import Planner from './components/Planner';
+import Hotels from './components/Hotels';
 import { api } from './api';
 import { useI18n } from './i18n';
 import { POPULAR_ROUTES } from './routes-data';
@@ -39,7 +40,8 @@ export default function App() {
   const [openAdd, setOpenAdd] = React.useState(false);
   const [tab, setTab] = React.useState(() => {
     const params = new URLSearchParams(window.location.search);
-    return params.get('tab') === '1' ? 1 : 0;
+    const t = parseInt(params.get('tab'), 10);
+    return [0, 1, 2].includes(t) ? t : 0;
   });
 
   const fetchTrips = async () => {
@@ -128,6 +130,7 @@ export default function App() {
           sx={{ mb: 3, borderBottom: '1px solid #e0e0e0' }}
         >
           <Tab label={t.tabSearch} />
+          <Tab label={lang === 'ru' ? 'Отели' : 'Hotels'} />
           <Tab label={t.tabPlanner} />
         </Tabs>
 
@@ -192,7 +195,9 @@ export default function App() {
           </Box>
         )}
 
-        {tab === 1 && <Planner />}
+        {tab === 1 && <Hotels />}
+
+        {tab === 2 && <Planner />}
 
         {/* Popular routes — internal links for SEO */}
         <Divider sx={{ my: 4 }} />
