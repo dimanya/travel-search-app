@@ -87,7 +87,12 @@ export default function FlightLanding() {
       >
         <Toolbar>
           <FlightTakeoffIcon sx={{ mr: 1 }} />
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+          <Typography
+            variant="h6"
+            component={RouterLink}
+            to="/"
+            sx={{ flexGrow: 1, textDecoration: 'none', color: 'inherit' }}
+          >
             Travel Search App
           </Typography>
           <Button

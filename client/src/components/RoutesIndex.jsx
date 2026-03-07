@@ -61,7 +61,7 @@ export default function RoutesIndex() {
       >
         <Toolbar>
           <FlightTakeoffIcon sx={{ mr: 1 }} />
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>Travel Search App</Typography>
+          <Typography variant="h6" component={RouterLink} to="/" sx={{ flexGrow: 1, textDecoration: 'none', color: 'inherit' }}>Travel Search App</Typography>
           <Button component={RouterLink} to="/" startIcon={<ArrowBackIcon />} size="small">
             {effectiveLang === 'ru' ? 'Главная' : 'Home'}
           </Button>
