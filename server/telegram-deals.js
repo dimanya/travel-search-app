@@ -9,7 +9,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-const BOT_TOKEN = process.env.TG_DEALS_BOT_TOKEN || '8503625543:AAGu3UnOcOKt6Ax6rpVpYA2ds2eYQ_jB2nI';
+const BOT_TOKEN = process.env.TG_DEALS_BOT_TOKEN || '';
 const CHANNEL = process.env.TG_DEALS_CHANNEL || '@travelsearch_deals';
 const TP_TOKEN = process.env.TRAVELPAYOUTS_TOKEN || '';
 const TP_MARKER = process.env.TRAVELPAYOUTS_MARKER || '681967';
