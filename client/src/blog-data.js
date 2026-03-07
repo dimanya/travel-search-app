@@ -2414,3 +2414,7 @@ export const BLOG_POSTS = [
     ],
   },
 ];
+
+export function getPost(slug) {
+  return BLOG_POSTS.find((p) => p.slug === slug) || null;
+}
