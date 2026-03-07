@@ -7,6 +7,7 @@ import FlightLanding from './components/FlightLanding';
 import RoutesIndex from './components/RoutesIndex';
 import BlogIndex from './components/BlogIndex';
 import BlogPost from './components/BlogPost';
+import CityHub from './components/CityHub';
 import LangWrapper from './components/LangWrapper';
 import { I18nProvider } from './i18n';
 import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
@@ -48,6 +49,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 
               {/* Language-prefixed flight routes */}
               <Route path="/:lang/flights" element={<LangWrapper><RoutesIndex /></LangWrapper>} />
+              <Route path="/:lang/flights/from/:city" element={<LangWrapper><CityHub /></LangWrapper>} />
               <Route path="/:lang/flights/:route" element={<LangWrapper><FlightLanding /></LangWrapper>} />
               <Route path="/:lang/blog" element={<LangWrapper><BlogIndex /></LangWrapper>} />
               <Route path="/:lang/blog/:slug" element={<LangWrapper><BlogPost /></LangWrapper>} />

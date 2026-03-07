@@ -78,8 +78,13 @@ export default function RoutesIndex() {
 
         {Object.entries(grouped).map(([city, routes]) => (
           <Box key={city} sx={{ mb: 3 }}>
-            <Typography variant="h6" sx={{ mb: 1 }}>
-              {effectiveLang === 'ru' ? `Из ${city}` : `From ${city}`}
+            <Typography
+              variant="h6"
+              component={RouterLink}
+              to={`/${effectiveLang}/flights/from/${routes[0].from.toLowerCase()}`}
+              sx={{ mb: 1, textDecoration: 'none', color: 'inherit', '&:hover': { color: 'primary.main' } }}
+            >
+              {effectiveLang === 'ru' ? `Из ${city} →` : `From ${city} →`}
             </Typography>
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
               {routes.map((r) => (

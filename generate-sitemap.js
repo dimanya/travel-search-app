@@ -54,6 +54,21 @@ for (const r of routes) {
   }
 }
 
+// City hubs (unique origin cities)
+const origins = [...new Set(routes.map(r => r.from))];
+for (const city of origins) {
+  for (const lang of langs) {
+    xml += `
+  <url>
+    <loc>${BASE}/${lang}/flights/from/${city}</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="${BASE}/en/flights/from/${city}"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="${BASE}/ru/flights/from/${city}"/>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>`;
+  }
+}
+
 // Blog index
 for (const lang of langs) {
   xml += `
@@ -92,5 +107,5 @@ if (fs.existsSync(path.dirname(distPath))) {
   fs.writeFileSync(distPath, xml);
 }
 
-const totalUrls = 1 + langs.length * 2 + routes.length * 2 + slugs.length * 2;
-console.log(`✅ Sitemap generated: ${totalUrls} URLs (${routes.length} routes, ${slugs.length} blog posts)`);
+const totalUrls = 1 + langs.length * 2 + routes.length * 2 + origins.length * 2 + slugs.length * 2;
+console.log(`✅ Sitemap generated: ${totalUrls} URLs (${routes.length} routes, ${origins.length} city hubs, ${slugs.length} blog posts)`);
