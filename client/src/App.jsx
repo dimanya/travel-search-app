@@ -40,6 +40,8 @@ export default function App() {
   const [rows, setRows] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
   const [filters, setFilters] = React.useState({ from: '', to: '', date: '' });
+  const [fromInput, setFromInput] = React.useState('');
+  const [toInput, setToInput] = React.useState('');
   const [openAdd, setOpenAdd] = React.useState(false);
   const [tab, setTab] = React.useState(() => {
     const params = new URLSearchParams(window.location.search);
@@ -162,14 +164,14 @@ export default function App() {
                     }}
                     value={AIRPORTS.find((a) => a.code === filters.from) || null}
                     onChange={(event, newValue) => {
-                      // newValue can be airport object, string (freeSolo), or null
-                      const code = newValue?.code || newValue || '';
+                      const code = newValue?.code || '';
                       setFilters((f) => ({ ...f, from: code }));
+                      setFromInput(code ? getAirportLabel(code, lang) : '');
                     }}
-                    inputValue={filters.from}
-                    onInputChange={(event, newInputValue) => {
-                      // Allow typing IATA codes directly
-                      setFilters((f) => ({ ...f, from: newInputValue }));
+                    inputValue={fromInput}
+                    onInputChange={(event, newInputValue, reason) => {
+                      if (reason === 'input') setFromInput(newInputValue);
+                      if (reason === 'clear') { setFromInput(''); setFilters((f) => ({ ...f, from: '' })); }
                     }}
                     filterOptions={(options, state) => {
                       const inputValue = state.inputValue.toLowerCase();
@@ -202,14 +204,14 @@ export default function App() {
                     }}
                     value={AIRPORTS.find((a) => a.code === filters.to) || null}
                     onChange={(event, newValue) => {
-                      // newValue can be airport object, string (freeSolo), or null
-                      const code = newValue?.code || newValue || '';
+                      const code = newValue?.code || '';
                       setFilters((f) => ({ ...f, to: code }));
+                      setToInput(code ? getAirportLabel(code, lang) : '');
                     }}
-                    inputValue={filters.to}
-                    onInputChange={(event, newInputValue) => {
-                      // Allow typing IATA codes directly
-                      setFilters((f) => ({ ...f, to: newInputValue }));
+                    inputValue={toInput}
+                    onInputChange={(event, newInputValue, reason) => {
+                      if (reason === 'input') setToInput(newInputValue);
+                      if (reason === 'clear') { setToInput(''); setFilters((f) => ({ ...f, to: '' })); }
                     }}
                     filterOptions={(options, state) => {
                       const inputValue = state.inputValue.toLowerCase();
