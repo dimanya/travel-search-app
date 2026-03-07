@@ -113,6 +113,22 @@ export default function SubscribeBlock() {
             {isRu ? 'Ошибка. Попробуйте позже.' : 'Error. Please try again later.'}
           </Alert>
         </Collapse>
+
+        <Button
+          href="https://t.me/travelsearch_deals"
+          target="_blank"
+          rel="noopener"
+          variant="outlined"
+          sx={{
+            mt: 2,
+            color: '#fff',
+            borderColor: 'rgba(255,255,255,0.5)',
+            textTransform: 'none',
+            '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.1)' },
+          }}
+        >
+          {isRu ? '📢 Telegram-канал с горящими билетами' : '📢 Telegram channel with hot deals'}
+        </Button>
       </CardContent>
     </Card>
   );
