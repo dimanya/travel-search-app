@@ -3,6 +3,8 @@
     { "source": "/flights", "destination": "/index.html" },
     { "source": "/flights/:route", "destination": "/index.html" },
     { "source": "/:lang/flights", "destination": "/index.html" },
-    { "source": "/:lang/flights/:route", "destination": "/index.html" }
+    { "source": "/:lang/flights/:route", "destination": "/index.html" },
+    { "source": "/:lang/blog", "destination": "/index.html" },
+    { "source": "/:lang/blog/:slug", "destination": "/index.html" }
   ]
 }

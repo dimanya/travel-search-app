@@ -233,14 +233,14 @@ export default function App() {
             />
           ))}
         </Stack>
-        <Button
-          component={RouterLink}
-          to={`/${lang}/flights`}
-          variant="text"
-          size="small"
-        >
-          {lang === 'ru' ? 'Все направления →' : 'All routes →'}
-        </Button>
+        <Stack direction="row" spacing={2}>
+          <Button component={RouterLink} to={`/${lang}/flights`} variant="text" size="small">
+            {lang === 'ru' ? 'Все направления →' : 'All routes →'}
+          </Button>
+          <Button component={RouterLink} to={`/${lang}/blog`} variant="text" size="small">
+            {lang === 'ru' ? '📝 Блог →' : '📝 Blog →'}
+          </Button>
+        </Stack>
       </Container>
     </>
   );
