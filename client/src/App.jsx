@@ -19,6 +19,7 @@ import {
   Divider,
   ToggleButtonGroup,
   ToggleButton,
+  Autocomplete,
 } from '@mui/material';
 import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
 import LanguageIcon from '@mui/icons-material/Language';
@@ -32,6 +33,7 @@ import SubscribeBlock from './components/SubscribeBlock';
 import { api } from './api';
 import { useI18n } from './i18n';
 import { POPULAR_ROUTES } from './routes-data';
+import { AIRPORTS, getAirportLabel } from './airports-data';
 
 export default function App() {
   const { t, lang, setLang } = useI18n();
@@ -151,19 +153,85 @@ export default function App() {
                   alignItems={{ xs: 'stretch', sm: 'center' }}
                   sx={{ mb: 2 }}
                 >
-                  <TextField
-                    label={t.fromLabel}
+                  <Autocomplete
+                    options={AIRPORTS}
+                    getOptionLabel={(option) => {
+                      // option can be airport object or string (freeSolo)
+                      if (typeof option === 'string') return option;
+                      return getAirportLabel(option.code, lang);
+                    }}
+                    value={AIRPORTS.find((a) => a.code === filters.from) || null}
+                    onChange={(event, newValue) => {
+                      // newValue can be airport object, string (freeSolo), or null
+                      const code = newValue?.code || newValue || '';
+                      setFilters((f) => ({ ...f, from: code }));
+                    }}
+                    inputValue={filters.from}
+                    onInputChange={(event, newInputValue) => {
+                      // Allow typing IATA codes directly
+                      setFilters((f) => ({ ...f, from: newInputValue }));
+                    }}
+                    filterOptions={(options, state) => {
+                      const inputValue = state.inputValue.toLowerCase();
+                      if (!inputValue) return options;
+
+                      return options.filter((option) => {
+                        const cityEn = option.city_en.toLowerCase();
+                        const cityRu = option.city_ru.toLowerCase();
+                        const code = option.code.toLowerCase();
+                        return (
+                          code.includes(inputValue) ||
+                          cityEn.includes(inputValue) ||
+                          cityRu.includes(inputValue)
+                        );
+                      });
+                    }}
+                    freeSolo
                     size="small"
-                    placeholder="LAX"
-                    value={filters.from}
-                    onChange={(e) => setFilters((f) => ({ ...f, from: e.target.value }))}
+                    renderInput={(params) => (
+                      <TextField {...params} label={t.fromLabel} placeholder="LAX" />
+                    )}
+                    sx={{ minWidth: 200 }}
                   />
-                  <TextField
-                    label={t.toLabel}
+                  <Autocomplete
+                    options={AIRPORTS}
+                    getOptionLabel={(option) => {
+                      // option can be airport object or string (freeSolo)
+                      if (typeof option === 'string') return option;
+                      return getAirportLabel(option.code, lang);
+                    }}
+                    value={AIRPORTS.find((a) => a.code === filters.to) || null}
+                    onChange={(event, newValue) => {
+                      // newValue can be airport object, string (freeSolo), or null
+                      const code = newValue?.code || newValue || '';
+                      setFilters((f) => ({ ...f, to: code }));
+                    }}
+                    inputValue={filters.to}
+                    onInputChange={(event, newInputValue) => {
+                      // Allow typing IATA codes directly
+                      setFilters((f) => ({ ...f, to: newInputValue }));
+                    }}
+                    filterOptions={(options, state) => {
+                      const inputValue = state.inputValue.toLowerCase();
+                      if (!inputValue) return options;
+
+                      return options.filter((option) => {
+                        const cityEn = option.city_en.toLowerCase();
+                        const cityRu = option.city_ru.toLowerCase();
+                        const code = option.code.toLowerCase();
+                        return (
+                          code.includes(inputValue) ||
+                          cityEn.includes(inputValue) ||
+                          cityRu.includes(inputValue)
+                        );
+                      });
+                    }}
+                    freeSolo
                     size="small"
-                    placeholder="JFK"
-                    value={filters.to}
-                    onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))}
+                    renderInput={(params) => (
+                      <TextField {...params} label={t.toLabel} placeholder="JFK" />
+                    )}
+                    sx={{ minWidth: 200 }}
                   />
                   <TextField
                     label={t.dateLabel}
