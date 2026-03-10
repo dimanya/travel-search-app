@@ -58,11 +58,11 @@ function getCityName(code) {
 const API_BASE = process.env.API_BASE || 'https://travel-search-app-b6cw.onrender.com';
 
 async function fetchCheapest(origin) {
-  // Use our own Render backend (it has Travelpayouts token)
+  // Try our Render backend first, fallback to Travelpayouts directly
   const url = `${API_BASE}/api/trips?from=${origin}`;
   try {
-    const resp = await fetch(url);
-    if (!resp.ok) return [];
+    const resp = await fetch(url, { signal: AbortSignal.timeout(15000) });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
     return data.map(t => ({
       origin: t.from,
@@ -75,7 +75,30 @@ async function fetchCheapest(origin) {
       link: t.link,
     }));
   } catch (e) {
-    console.error(`Fetch error for ${origin}:`, e.message);
+    console.error(`Render API error for ${origin}: ${e.message}, trying Travelpayouts directly...`);
+    return fetchFromTravelpayouts(origin);
+  }
+}
+
+async function fetchFromTravelpayouts(origin) {
+  const url = `${TP_BASE}/prices_for_dates?origin=${origin}&unique=false&sorting=price&direct=false&currency=usd&limit=5&page=1&one_way=false&token=${TP_TOKEN}`;
+  try {
+    const resp = await fetch(url, { signal: AbortSignal.timeout(10000) });
+    if (!resp.ok) return [];
+    const data = await resp.json();
+    if (!data.data) return [];
+    return data.data.map(t => ({
+      origin: t.origin,
+      destination: t.destination,
+      price: t.price,
+      departure_at: t.departure_at,
+      return_at: t.return_at,
+      transfers: t.transfers,
+      airline: t.airline,
+      link: `https://www.aviasales.com${t.link}?marker=${TP_MARKER}`,
+    }));
+  } catch (e) {
+    console.error(`Travelpayouts error for ${origin}:`, e.message);
     return [];
   }
 }

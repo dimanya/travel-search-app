@@ -2,7 +2,7 @@ node_modules/
 npm-debug.log*
 .DS_Store
 .env
-client/dist/
+# client/dist/ — committed for prerendered SEO pages
 client/.vite/
 logs/
 *.log
