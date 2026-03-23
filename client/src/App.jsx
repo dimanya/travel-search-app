@@ -123,9 +123,7 @@ export default function App() {
     }
   };
 
-  React.useEffect(() => {
-    fetchTrips();
-  }, []);
+  // Don't auto-fetch on page load — show empty state until user searches
 
   return (
     <>

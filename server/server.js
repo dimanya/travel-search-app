@@ -45,22 +45,20 @@ const TP_TOKEN = process.env.TRAVELPAYOUTS_TOKEN || '';
 const TP_MARKER = process.env.TRAVELPAYOUTS_MARKER || '681967';
 const TP_BASE = 'https://api.travelpayouts.com/aviasales/v3';
 
-/* ───── Demo fallback data ───── */
-const DEMO_TRIPS = [
-  { id: 1, from: 'LAX', to: 'JFK', date: '2025-11-05', price: 199, airline: 'Demo', link: null },
-  { id: 2, from: 'SFO', to: 'SEA', date: '2025-11-10', price: 89, airline: 'Demo', link: null },
-];
+/* ───── No more demo data — return empty when no results ───── */
 
 /* ───── API: search flights ───── */
 app.get('/api/trips', async (req, res) => {
   const { from, to, date } = req.query;
 
-  // If no Travelpayouts token or no search params → return demo
-  if (!TP_TOKEN || (!from && !to)) {
-    let result = DEMO_TRIPS;
-    if (from) result = result.filter((t) => t.from.toLowerCase() === String(from).toLowerCase());
-    if (to) result = result.filter((t) => t.to.toLowerCase() === String(to).toLowerCase());
-    return res.json(result);
+  // If no search params → return empty (don't show fake data)
+  if (!from && !to) {
+    return res.json([]);
+  }
+
+  // If no Travelpayouts token → return empty
+  if (!TP_TOKEN) {
+    return res.json([]);
   }
 
   try {
@@ -79,7 +77,7 @@ app.get('/api/trips', async (req, res) => {
 
     if (!resp.ok) {
       console.error('Travelpayouts error:', resp.status, await resp.text());
-      return res.json(DEMO_TRIPS);
+      return res.json([]);
     }
 
     const body = await resp.json();
@@ -105,7 +103,7 @@ app.get('/api/trips', async (req, res) => {
     return res.json(data);
   } catch (err) {
     console.error('Travelpayouts fetch failed:', err.message);
-    return res.json(DEMO_TRIPS);
+    return res.json([]);
   }
 });
 

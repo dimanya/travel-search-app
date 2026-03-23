@@ -50,7 +50,7 @@ function MobileCard({ row, t, onBuy }) {
           )}
         </Stack>
 
-        {row.link ? (
+        {row.link && (
           <Button
             variant="contained"
             size="small"
@@ -64,8 +64,6 @@ function MobileCard({ row, t, onBuy }) {
           >
             {t.buy}
           </Button>
-        ) : (
-          <Chip label={t.demo} size="small" />
         )}
       </CardContent>
     </Card>
@@ -140,7 +138,7 @@ export default function TripsTable({ rows }) {
                 ${r.price}
               </TableCell>
               <TableCell align="center">
-                {r.link ? (
+                {r.link && (
                   <Button
                     variant="contained"
                     size="small"
@@ -153,8 +151,6 @@ export default function TripsTable({ rows }) {
                   >
                     {t.buy}
                   </Button>
-                ) : (
-                  <Chip label={t.demo} size="small" />
                 )}
               </TableCell>
             </TableRow>
