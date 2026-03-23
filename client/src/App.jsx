@@ -210,10 +210,15 @@ export default function App() {
                   <Autocomplete
                     options={AIRPORTS}
                     getOptionLabel={(option) => {
-                      // option can be airport object or string (freeSolo)
                       if (typeof option === 'string') return option;
                       return getAirportLabel(option.code, lang);
                     }}
+                    renderOption={(props, option) => (
+                      <li {...props} key={option.code}>
+                        <span style={{ fontWeight: 600, marginRight: 6 }}>{option.code}</span>
+                        {lang === 'ru' ? option.city_ru : option.city_en}
+                      </li>
+                    )}
                     value={AIRPORTS.find((a) => a.code === filters.from) || null}
                     onChange={(event, newValue) => {
                       const code = newValue?.code || '';
@@ -225,35 +230,33 @@ export default function App() {
                       if (reason === 'input') setFromInput(newInputValue);
                       if (reason === 'clear') { setFromInput(''); setFilters((f) => ({ ...f, from: '' })); }
                     }}
-                    filterOptions={(options, state) => {
-                      const inputValue = state.inputValue.toLowerCase();
-                      if (!inputValue) return options;
-
-                      return options.filter((option) => {
-                        const cityEn = option.city_en.toLowerCase();
-                        const cityRu = option.city_ru.toLowerCase();
-                        const code = option.code.toLowerCase();
-                        return (
-                          code.includes(inputValue) ||
-                          cityEn.includes(inputValue) ||
-                          cityRu.includes(inputValue)
-                        );
+                    filterOptions={(options, { inputValue }) => {
+                      const q = inputValue.toLowerCase().trim();
+                      if (!q) return options.slice(0, 15);
+                      return options.filter((o) => {
+                        const label = `${o.code} ${o.city_en} ${o.city_ru}`.toLowerCase();
+                        return q.split(/\s+/).every((word) => label.includes(word));
                       });
                     }}
                     freeSolo
                     size="small"
                     renderInput={(params) => (
-                      <TextField {...params} label={t.fromLabel} placeholder="LAX" />
+                      <TextField {...params} label={t.fromLabel} placeholder="LAX, New York..." />
                     )}
                     sx={{ minWidth: 200 }}
                   />
                   <Autocomplete
                     options={AIRPORTS}
                     getOptionLabel={(option) => {
-                      // option can be airport object or string (freeSolo)
                       if (typeof option === 'string') return option;
                       return getAirportLabel(option.code, lang);
                     }}
+                    renderOption={(props, option) => (
+                      <li {...props} key={option.code}>
+                        <span style={{ fontWeight: 600, marginRight: 6 }}>{option.code}</span>
+                        {lang === 'ru' ? option.city_ru : option.city_en}
+                      </li>
+                    )}
                     value={AIRPORTS.find((a) => a.code === filters.to) || null}
                     onChange={(event, newValue) => {
                       const code = newValue?.code || '';
@@ -265,25 +268,18 @@ export default function App() {
                       if (reason === 'input') setToInput(newInputValue);
                       if (reason === 'clear') { setToInput(''); setFilters((f) => ({ ...f, to: '' })); }
                     }}
-                    filterOptions={(options, state) => {
-                      const inputValue = state.inputValue.toLowerCase();
-                      if (!inputValue) return options;
-
-                      return options.filter((option) => {
-                        const cityEn = option.city_en.toLowerCase();
-                        const cityRu = option.city_ru.toLowerCase();
-                        const code = option.code.toLowerCase();
-                        return (
-                          code.includes(inputValue) ||
-                          cityEn.includes(inputValue) ||
-                          cityRu.includes(inputValue)
-                        );
+                    filterOptions={(options, { inputValue }) => {
+                      const q = inputValue.toLowerCase().trim();
+                      if (!q) return options.slice(0, 15);
+                      return options.filter((o) => {
+                        const label = `${o.code} ${o.city_en} ${o.city_ru}`.toLowerCase();
+                        return q.split(/\s+/).every((word) => label.includes(word));
                       });
                     }}
                     freeSolo
                     size="small"
                     renderInput={(params) => (
-                      <TextField {...params} label={t.toLabel} placeholder="JFK" />
+                      <TextField {...params} label={t.toLabel} placeholder="JFK, London..." />
                     )}
                     sx={{ minWidth: 200 }}
                   />
