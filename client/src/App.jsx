@@ -22,6 +22,8 @@ import {
   Autocomplete,
 } from '@mui/material';
 import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
+import SearchIcon from '@mui/icons-material/Search';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import LanguageIcon from '@mui/icons-material/Language';
 import { Link as RouterLink } from 'react-router-dom';
 
@@ -109,6 +111,7 @@ const CATEGORY_LABELS = {
 };
 
 const CATEGORY_ORDER = ['us-domestic', 'us-europe', 'us-asia', 'us-mexico', 'europe', 'asia', 'europe-asia', 'other'];
+const ROUTES_PER_CATEGORY = 6;
 
 export default function App() {
   const { t, lang, setLang } = useI18n();
@@ -123,6 +126,28 @@ export default function App() {
     const t = parseInt(params.get('tab'), 10);
     return [0, 1, 2].includes(t) ? t : 0;
   });
+  const [expandedCats, setExpandedCats] = React.useState({});
+  const searchCardRef = React.useRef(null);
+
+  const handleRouteClick = (from, to) => {
+    // Fill search form with clicked route
+    setFilters((f) => ({ ...f, from, to }));
+    setFromInput(getAirportLabel(from, lang));
+    setToInput(getAirportLabel(to, lang));
+    // Switch to search tab
+    setTab(0);
+    // Scroll to search card
+    setTimeout(() => {
+      searchCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+    // Auto-trigger search
+    setLoading(true);
+    api
+      .get('/api/trips', { params: { from, to } })
+      .then(({ data }) => setRows(data))
+      .catch(() => setRows([]))
+      .finally(() => setLoading(false));
+  };
 
   const fetchTrips = async () => {
     setLoading(true);
@@ -228,7 +253,7 @@ export default function App() {
 
         {tab === 0 && (
           <Box sx={{ mt: 1 }}>
-            <Card elevation={2} sx={{ mb: 3 }}>
+            <Card ref={searchCardRef} elevation={2} sx={{ mb: 3 }}>
               <CardHeader title={t.searchTitle} subheader={t.searchSub} />
               <CardContent>
                 <Stack
@@ -375,38 +400,70 @@ export default function App() {
             grouped[cat].push(r);
           });
 
-          return CATEGORY_ORDER.filter((cat) => grouped[cat]?.length > 0).map((cat) => (
-            <Box key={cat} sx={{ mb: 3 }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5, color: 'text.primary' }}>
-                {CATEGORY_LABELS[cat][lang]}
-              </Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                {grouped[cat].map((r) => {
-                  const price = getStablePrice(r.from, r.to);
-                  const fromCity = lang === 'ru' ? r.fromCity_ru : r.fromCity_en;
-                  const toCity = lang === 'ru' ? r.toCity_ru : r.toCity_en;
-                  return (
-                    <Chip
-                      key={`${r.from}-${r.to}`}
-                      label={
-                        <span>
-                          {fromCity} → {toCity}{' '}
-                          <strong style={{ color: '#2e7d32' }}>${price}</strong>
-                        </span>
-                      }
-                      component={RouterLink}
-                      to={`/${lang}/flights/${r.from.toLowerCase()}-${r.to.toLowerCase()}`}
-                      clickable
-                      variant="outlined"
-                      size="small"
-                      icon={<FlightTakeoffIcon />}
-                      sx={{ mb: 0.5 }}
-                    />
-                  );
-                })}
-              </Stack>
-            </Box>
-          ));
+          return CATEGORY_ORDER.filter((cat) => grouped[cat]?.length > 0).map((cat) => {
+            const isExpanded = expandedCats[cat];
+            const allRoutes = grouped[cat];
+            const visibleRoutes = isExpanded ? allRoutes : allRoutes.slice(0, ROUTES_PER_CATEGORY);
+            const hasMore = allRoutes.length > ROUTES_PER_CATEGORY;
+
+            return (
+              <Box key={cat} sx={{ mb: 3 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5, color: 'text.primary' }}>
+                  {CATEGORY_LABELS[cat][lang]}
+                </Typography>
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)', md: 'repeat(4, 1fr)' },
+                    gap: 1,
+                  }}
+                >
+                  {visibleRoutes.map((r) => {
+                    const price = getStablePrice(r.from, r.to);
+                    const fromCity = lang === 'ru' ? r.fromCity_ru : r.fromCity_en;
+                    const toCity = lang === 'ru' ? r.toCity_ru : r.toCity_en;
+                    return (
+                      <Chip
+                        key={`${r.from}-${r.to}`}
+                        label={
+                          <span>
+                            {fromCity} → {toCity}{' '}
+                            <strong style={{ color: '#2e7d32' }}>${price}</strong>
+                          </span>
+                        }
+                        onClick={() => handleRouteClick(r.from, r.to)}
+                        clickable
+                        variant="outlined"
+                        size="small"
+                        icon={<SearchIcon sx={{ fontSize: 16 }} />}
+                        sx={{
+                          justifyContent: 'flex-start',
+                          height: 'auto',
+                          py: 0.5,
+                          '& .MuiChip-label': {
+                            whiteSpace: 'normal',
+                            lineHeight: 1.3,
+                          },
+                        }}
+                      />
+                    );
+                  })}
+                </Box>
+                {hasMore && !isExpanded && (
+                  <Button
+                    size="small"
+                    onClick={() => setExpandedCats((prev) => ({ ...prev, [cat]: true }))}
+                    endIcon={<ExpandMoreIcon />}
+                    sx={{ mt: 1, textTransform: 'none' }}
+                  >
+                    {lang === 'ru'
+                      ? `Ещё ${allRoutes.length - ROUTES_PER_CATEGORY} направлений`
+                      : `Show ${allRoutes.length - ROUTES_PER_CATEGORY} more`}
+                  </Button>
+                )}
+              </Box>
+            );
+          });
         })()}
         <Stack direction="row" spacing={2}>
           <Button component={RouterLink} to={`/${lang}/flights`} variant="text" size="small">
