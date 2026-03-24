@@ -80,6 +80,36 @@ function getStablePrice(from, to) {
   return ROUTE_PRICE_CACHE[key];
 }
 
+// Categorize routes by region for display
+function getRouteCategory(from, to) {
+  const isUS_f = US_AIRPORTS.has(from), isUS_t = US_AIRPORTS.has(to);
+  const isMex_f = MEX_CARIBBEAN.has(from), isMex_t = MEX_CARIBBEAN.has(to);
+  const isEur_f = EUR_AIRPORTS.has(from), isEur_t = EUR_AIRPORTS.has(to);
+  const isAsia_f = ASIA_AIRPORTS.has(from), isAsia_t = ASIA_AIRPORTS.has(to);
+
+  if (isUS_f && isUS_t) return 'us-domestic';
+  if ((isUS_f && isEur_t) || (isEur_f && isUS_t)) return 'us-europe';
+  if ((isUS_f && isAsia_t) || (isAsia_f && isUS_t)) return 'us-asia';
+  if ((isUS_f && isMex_t) || (isMex_f && isUS_t)) return 'us-mexico';
+  if (isEur_f && isEur_t) return 'europe';
+  if (isAsia_f && isAsia_t) return 'asia';
+  if ((isEur_f && isAsia_t) || (isAsia_f && isEur_t)) return 'europe-asia';
+  return 'other';
+}
+
+const CATEGORY_LABELS = {
+  'us-domestic': { en: '🇺🇸 US Domestic', ru: '🇺🇸 Внутри США' },
+  'us-europe': { en: '✈️ US → Europe', ru: '✈️ США → Европа' },
+  'us-asia': { en: '🌏 US → Asia', ru: '🌏 США → Азия' },
+  'us-mexico': { en: '🏖️ US → Mexico & Caribbean', ru: '🏖️ США → Мексика и Карибы' },
+  'europe': { en: '🇪🇺 Europe', ru: '🇪🇺 Европа' },
+  'asia': { en: '🇯🇵 Asia', ru: '🇯🇵 Азия' },
+  'europe-asia': { en: '🌍 Europe → Asia / Middle East', ru: '🌍 Европа → Азия / Ближний Восток' },
+  'other': { en: '🌎 Other Routes', ru: '🌎 Другие направления' },
+};
+
+const CATEGORY_ORDER = ['us-domestic', 'us-europe', 'us-asia', 'us-mexico', 'europe', 'asia', 'europe-asia', 'other'];
+
 export default function App() {
   const { t, lang, setLang } = useI18n();
   const [rows, setRows] = React.useState([]);
@@ -326,42 +356,58 @@ export default function App() {
         {/* Email subscribe */}
         <SubscribeBlock />
 
-        {/* Popular routes — internal links for SEO */}
+        {/* Popular routes — grouped by region */}
         <Divider sx={{ my: 4 }} />
         <Typography variant="h6" sx={{ mb: 1 }}>
           {lang === 'ru' ? '✈️ Популярные направления' : '✈️ Popular Routes'}
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
           {lang === 'ru'
             ? 'Дешёвые авиабилеты по популярным маршрутам'
             : 'Cheap flights on popular routes'}
         </Typography>
-        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
-          {POPULAR_ROUTES.map((r) => {
-            const price = getStablePrice(r.from, r.to);
-            const cityName = lang === 'ru' ? r.toCity_ru : r.toCity_en;
-            return (
-              <Chip
-                key={`${r.from}-${r.to}`}
-                label={
-                  <span>
-                    {r.from} → {cityName}{' '}
-                    <strong style={{ color: '#2e7d32' }}>
-                      ${price}
-                    </strong>
-                  </span>
-                }
-                component={RouterLink}
-                to={`/${lang}/flights/${r.from.toLowerCase()}-${r.to.toLowerCase()}`}
-                clickable
-                variant="outlined"
-                size="small"
-                icon={<FlightTakeoffIcon />}
-                sx={{ mb: 0.5 }}
-              />
-            );
-          })}
-        </Stack>
+        {(() => {
+          // Group routes by category
+          const grouped = {};
+          POPULAR_ROUTES.forEach((r) => {
+            const cat = getRouteCategory(r.from, r.to);
+            if (!grouped[cat]) grouped[cat] = [];
+            grouped[cat].push(r);
+          });
+
+          return CATEGORY_ORDER.filter((cat) => grouped[cat]?.length > 0).map((cat) => (
+            <Box key={cat} sx={{ mb: 3 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5, color: 'text.primary' }}>
+                {CATEGORY_LABELS[cat][lang]}
+              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                {grouped[cat].map((r) => {
+                  const price = getStablePrice(r.from, r.to);
+                  const fromCity = lang === 'ru' ? r.fromCity_ru : r.fromCity_en;
+                  const toCity = lang === 'ru' ? r.toCity_ru : r.toCity_en;
+                  return (
+                    <Chip
+                      key={`${r.from}-${r.to}`}
+                      label={
+                        <span>
+                          {fromCity} → {toCity}{' '}
+                          <strong style={{ color: '#2e7d32' }}>${price}</strong>
+                        </span>
+                      }
+                      component={RouterLink}
+                      to={`/${lang}/flights/${r.from.toLowerCase()}-${r.to.toLowerCase()}`}
+                      clickable
+                      variant="outlined"
+                      size="small"
+                      icon={<FlightTakeoffIcon />}
+                      sx={{ mb: 0.5 }}
+                    />
+                  );
+                })}
+              </Stack>
+            </Box>
+          ));
+        })()}
         <Stack direction="row" spacing={2}>
           <Button component={RouterLink} to={`/${lang}/flights`} variant="text" size="small">
             {lang === 'ru' ? 'Все направления →' : 'All routes →'}
