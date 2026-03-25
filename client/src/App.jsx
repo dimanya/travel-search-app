@@ -440,7 +440,6 @@ export default function App() {
                   {getCheapestRoutes(6).map((r) => {
                     const fromCity = lang === 'ru' ? r.fromCity_ru : r.fromCity_en;
                     const toCity = lang === 'ru' ? r.toCity_ru : r.toCity_en;
-                    const discount = Math.floor(15 + ((r.from.charCodeAt(0) + r.to.charCodeAt(0)) % 20));
                     return (
                       <Card
                         key={`hot-${r.from}-${r.to}`}
@@ -452,9 +451,9 @@ export default function App() {
                         }}
                         onClick={() => window.open(getAviasalesLink(r.from, r.to, lang, 'home_hot'), '_blank')}
                       >
-                        {/* Urgency badge */}
+                        {/* Popular route badge */}
                         <Chip
-                          label={`-${discount}%`}
+                          label={lang === 'ru' ? '🔥 Популярный' : '🔥 Popular'}
                           size="small"
                           color="error"
                           sx={{
@@ -473,7 +472,7 @@ export default function App() {
                             ${r.price}
                           </Typography>
                           <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                            {lang === 'ru' ? 'Ограниченное предложение' : 'Limited offer'}
+                            {lang === 'ru' ? 'Актуальная цена' : 'Current price'}
                           </Typography>
                         </CardContent>
                       </Card>
