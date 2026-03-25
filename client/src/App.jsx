@@ -25,6 +25,9 @@ import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
 import SearchIcon from '@mui/icons-material/Search';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import LanguageIcon from '@mui/icons-material/Language';
+import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { Link as RouterLink } from 'react-router-dom';
 
 import TripsTable from './components/TripsTable';
@@ -112,6 +115,36 @@ const CATEGORY_LABELS = {
 
 const CATEGORY_ORDER = ['us-domestic', 'us-europe', 'us-asia', 'us-mexico', 'europe', 'asia', 'europe-asia', 'other'];
 const ROUTES_PER_CATEGORY = 6;
+
+// Generate Aviasales affiliate link with UTM
+function getAviasalesLink(from, to, lang, placement = 'home') {
+  const baseUrl = 'https://www.aviasales.ru/search';
+  const params = new URLSearchParams({
+    from: from.toLowerCase(),
+    to: to.toLowerCase(),
+    utm_source: 'travelsearch.now',
+    utm_medium: placement,
+    utm_campaign: 'funnel_v1',
+    marker: '681967',
+  });
+  return `${baseUrl}?${params.toString()}`;
+}
+
+// Get cheapest routes for "Hot Deals" section
+function getCheapestRoutes(count = 6) {
+  return [...POPULAR_ROUTES]
+    .map(r => ({ ...r, price: getStablePrice(r.from, r.to) }))
+    .sort((a, b) => a.price - b.price)
+    .slice(0, count);
+}
+
+// Get social proof number (simulated)
+function getSocialProofNumber() {
+  // Returns a number between 1,200 and 1,500 that changes based on hour
+  const hour = new Date().getHours();
+  const base = 1200 + (hour * 10) % 300;
+  return base.toLocaleString();
+}
 
 export default function App() {
   const { t, lang, setLang } = useI18n();
@@ -371,6 +404,84 @@ export default function App() {
               onClose={() => setOpenAdd(false)}
               onSubmit={handleAdd}
             />
+
+            {/* SOCIAL PROOF */}
+            <Stack direction="row" spacing={1} alignItems="center" justifyContent="center" sx={{ mb: 3 }}>
+              <TrendingUpIcon color="success" fontSize="small" />
+              <Typography variant="body2" color="text.secondary">
+                {lang === 'ru'
+                  ? `🔥 Сегодня найдено ${getSocialProofNumber()} дешёвых рейсов`
+                  : `🔥 Found ${getSocialProofNumber()} cheap flights today`}
+              </Typography>
+            </Stack>
+
+            {/* HOT DEALS SECTION */}
+            <Card elevation={2} sx={{ mb: 3, border: '2px solid #FF6B00' }}>
+              <CardHeader
+                title={
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <LocalFireDepartmentIcon color="error" />
+                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                      {lang === 'ru' ? '🔥 ГОРЯЩИЕ БИЛЕТЫ' : '🔥 HOT DEALS'}
+                    </Typography>
+                  </Stack>
+                }
+                subheader={lang === 'ru' ? 'Самые низкие цены на сегодня' : 'Lowest prices today'}
+                sx={{ bgcolor: 'rgba(255, 107, 0, 0.05)' }}
+              />
+              <CardContent>
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' },
+                    gap: 2,
+                  }}
+                >
+                  {getCheapestRoutes(6).map((r) => {
+                    const fromCity = lang === 'ru' ? r.fromCity_ru : r.fromCity_en;
+                    const toCity = lang === 'ru' ? r.toCity_ru : r.toCity_en;
+                    const discount = Math.floor(15 + ((r.from.charCodeAt(0) + r.to.charCodeAt(0)) % 20));
+                    return (
+                      <Card
+                        key={`hot-${r.from}-${r.to}`}
+                        variant="outlined"
+                        sx={{
+                          position: 'relative',
+                          '&:hover': { boxShadow: 2 },
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => window.open(getAviasalesLink(r.from, r.to, lang, 'home_hot'), '_blank')}
+                      >
+                        {/* Urgency badge */}
+                        <Chip
+                          label={`-${discount}%`}
+                          size="small"
+                          color="error"
+                          sx={{
+                            position: 'absolute',
+                            top: -8,
+                            right: -8,
+                            fontWeight: 600,
+                            fontSize: '0.7rem',
+                          }}
+                        />
+                        <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                          <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
+                            {fromCity} → {toCity}
+                          </Typography>
+                          <Typography variant="h6" color="success.main" sx={{ fontWeight: 700 }}>
+                            ${r.price}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                            {lang === 'ru' ? 'Ограниченное предложение' : 'Limited offer'}
+                          </Typography>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </Box>
+              </CardContent>
+            </Card>
           </Box>
         )}
 
