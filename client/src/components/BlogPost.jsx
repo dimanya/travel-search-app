@@ -106,8 +106,38 @@ function getRelatedRoutesForPost(post, isRu, count = 3) {
 const TP_MARKER = '681967';
 const BOOKING_AID = '2709056';
 
-function InlineCTA({ post, isRu }) {
+function InlineCTA({ post, isRu, variant = 'primary' }) {
   const route = getRouteFromPost(post, isRu);
+  
+  if (variant === 'secondary') {
+    // Compact version for 2nd CTA
+    return (
+      <Paper elevation={1} sx={{ my: 2, p: 2, bgcolor: '#fff3e0', borderRadius: 2 }}>
+        <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
+          <Typography variant="body1" sx={{ fontWeight: 500 }}>
+            {isRu ? '✈️ Найдите лучшие цены на авиабилеты' : '✈️ Find the best flight prices'}
+          </Typography>
+          <Button
+            variant="contained"
+            size="small"
+            endIcon={<OpenInNewIcon />}
+            href={route ? getAviasalesLink(route.from, route.to, isRu ? 'ru' : 'en', 'blog_inline2') : '/'}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => trackClick('aviasales', 'blog_inline2', route ? `${route.from}-${route.to}` : 'generic')}
+            sx={{
+              bgcolor: '#00C853',
+              '&:hover': { bgcolor: '#00B548' },
+              fontWeight: 600,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {isRu ? 'НАЙТИ →' : 'FIND →'}
+          </Button>
+        </Stack>
+      </Paper>
+    );
+  }
   
   if (route) {
     const fromCity = isRu ? route.fromCity_ru : route.fromCity_en;
@@ -249,6 +279,10 @@ function ContentRenderer({ content, lang, post, isRu }) {
         if (paragraphCount === 3) {
           elements.push(<InlineCTA key={`cta-${i}`} post={post} isRu={isRu} />);
         }
+        // Insert second CTA after 6th paragraph (for long articles)
+        if (paragraphCount === 6) {
+          elements.push(<InlineCTA key={`cta2-${i}`} post={post} isRu={isRu} variant="secondary" />);
+        }
         break;
       case 'ul':
         elements.push(
@@ -372,6 +406,45 @@ export default function BlogPost() {
           ))}
         </Stack>
       </Container>
+
+      {/* FLOATING CTA BUTTON — Mobile only */}
+      <Box
+        sx={{
+          position: 'fixed',
+          bottom: 16,
+          right: 16,
+          zIndex: 1000,
+          display: { xs: 'block', sm: 'none' },
+        }}
+      >
+        <Button
+          variant="contained"
+          size="large"
+          href={(() => {
+            const route = getRouteFromPost(post, isRu);
+            return route 
+              ? getAviasalesLink(route.from, route.to, isRu ? 'ru' : 'en', 'blog_floating')
+              : '/';
+          })()}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => {
+            const route = getRouteFromPost(post, isRu);
+            trackClick('aviasales', 'blog_floating', route ? `${route.from}-${route.to}` : 'generic');
+          }}
+          sx={{
+            bgcolor: '#FF6B00',
+            '&:hover': { bgcolor: '#E55A00' },
+            borderRadius: 999,
+            px: 3,
+            py: 1.5,
+            fontWeight: 600,
+            boxShadow: '0 4px 12px rgba(255, 107, 0, 0.4)',
+          }}
+        >
+          {isRu ? '✈️ Найти билет' : '✈️ Find flights'}
+        </Button>
+      </Box>
     </>
   );
 }

@@ -90,16 +90,18 @@ export default function FlightLanding() {
   const [rows, setRows] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [showStickyBar, setShowStickyBar] = React.useState(false);
+  const [showExitPopup, setShowExitPopup] = React.useState(false);
+  const exitTriggered = React.useRef(false);
 
   const parts = (route || '').split('-');
   const from = (parts[0] || '').toUpperCase();
   const to = (parts[1] || '').toUpperCase();
   const info = getRouteInfo(from, to, effectiveLang);
-  
+
   // Price for display
   const displayPrice = getStablePrice(from, to);
   const relatedRoutes = getRelatedRoutes(from, to, 3);
-  
+
   // Sticky bar scroll handler
   React.useEffect(() => {
     const handleScroll = () => {
@@ -107,6 +109,18 @@ export default function FlightLanding() {
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Exit intent popup handler (desktop only)
+  React.useEffect(() => {
+    const handleMouseLeave = (e) => {
+      if (e.clientY < 10 && !exitTriggered.current) {
+        exitTriggered.current = true;
+        setShowExitPopup(true);
+      }
+    };
+    document.addEventListener('mouseleave', handleMouseLeave);
+    return () => document.removeEventListener('mouseleave', handleMouseLeave);
   }, []);
 
   React.useEffect(() => {
@@ -355,6 +369,80 @@ export default function FlightLanding() {
             ))}
         </Stack>
       </Container>
+
+      {/* EXIT INTENT POPUP — Desktop only */}
+      {showExitPopup && (
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            bgcolor: 'rgba(0,0,0,0.5)',
+            zIndex: 2000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            p: 2,
+          }}
+          onClick={() => setShowExitPopup(false)}
+        >
+          <Paper
+            elevation={8}
+            sx={{
+              maxWidth: 400,
+              width: '100%',
+              p: 4,
+              textAlign: 'center',
+              position: 'relative',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Button
+              size="small"
+              onClick={() => setShowExitPopup(false)}
+              sx={{ position: 'absolute', top: 8, right: 8, minWidth: 'auto', p: 0.5 }}
+            >
+              ✕
+            </Button>
+            <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
+              {effectiveLang === 'ru' ? '⏰ Подождите!' : '⏰ Wait!'}
+            </Typography>
+            <Typography variant="body1" sx={{ mb: 3 }}>
+              {effectiveLang === 'ru'
+                ? `Специальная цена на ${info.fromCity} → ${info.toCity}: от $${displayPrice}`
+                : `Special price for ${info.fromCity} → ${info.toCity}: from $${displayPrice}`}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              {effectiveLang === 'ru'
+                ? '🔥 Цены меняются каждый час. Успейте забронировать!'
+                : '🔥 Prices change every hour. Book now!'}
+            </Typography>
+            <Button
+              variant="contained"
+              size="large"
+              fullWidth
+              endIcon={<OpenInNewIcon />}
+              href={getAviasalesLink(from, to, effectiveLang, 'route_exit')}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => {
+                trackClick('aviasales', 'route_exit', `${from}-${to}`);
+                setShowExitPopup(false);
+              }}
+              sx={{
+                bgcolor: '#FF6B00',
+                '&:hover': { bgcolor: '#E55A00' },
+                py: 1.5,
+                fontWeight: 600,
+              }}
+            >
+              {effectiveLang === 'ru' ? 'НАЙТИ БИЛЕТ СЕЙЧАС →' : 'FIND TICKETS NOW →'}
+            </Button>
+          </Paper>
+        </Box>
+      )}
 
       {/* STICKY CTA BAR — appears after scroll */}
       <Paper
