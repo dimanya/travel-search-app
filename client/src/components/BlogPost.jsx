@@ -2,46 +2,275 @@ import * as React from 'react';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import {
-  Container, Typography, AppBar, Toolbar, Button, Stack, Box, Chip, Divider,
+  Container, Typography, AppBar, Toolbar, Button, Stack, Box, Chip, Divider, Paper, Card, CardContent, Grid,
 } from '@mui/material';
 import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
 import HotelIcon from '@mui/icons-material/Hotel';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import { useI18n } from '../i18n';
 import { getPost, BLOG_POSTS } from '../blog-data';
+import { POPULAR_ROUTES } from '../routes-data';
 import { trackClick } from '../api';
 import SubscribeBlock from './SubscribeBlock';
+
+// Generate Aviasales affiliate link with UTM
+function getAviasalesLink(from, to, lang, placement = 'blog') {
+  const baseUrl = 'https://www.aviasales.ru/search';
+  const params = new URLSearchParams({
+    from: from.toLowerCase(),
+    to: to.toLowerCase(),
+    utm_source: 'travelsearch.now',
+    utm_medium: placement,
+    utm_campaign: 'funnel_v1',
+    marker: '681967',
+  });
+  return `${baseUrl}?${params.toString()}`;
+}
+
+// Get price for display
+function getDisplayPrice(from, to) {
+  const US_AIRPORTS = new Set(['JFK','LAX','SFO','ORD','ATL','DFW','MIA','BOS','SEA','DEN','IAH','EWR','PHX','SAN','PDX','MSP','DTW','PHL','CLT','LAS','MCO','BWI','SLC','RDU','AUS','TPA','HNL','STL','MCI','IND','CMH','CVG','BNA','PIT','MKE','JAX','OAK','SMF','SNA','BUR','ONT','SJC','ABQ','RNO','SAT','MEM','OKC','TUL','ORF','RIC','CHS']);
+  const EUR_AIRPORTS = new Set(['LHR','CDG','FRA','AMS','FCO','MAD','BCN','MUC','ZRH','VIE','PRG','BUD','WAW','ATH','IST','DUB','CPH','OSL','ARN','HEL','LIS']);
+  const ASIA_AIRPORTS = new Set(['NRT','HND','ICN','BKK','SIN','KUL','CGK','MNL','DEL','BOM','HAN','SGN','HKT']);
+  
+  const isUS = US_AIRPORTS.has(from) && US_AIRPORTS.has(to);
+  const isUSEur = (US_AIRPORTS.has(from) && EUR_AIRPORTS.has(to)) || (US_AIRPORTS.has(to) && EUR_AIRPORTS.has(from));
+  const isUSAsia = (US_AIRPORTS.has(from) && ASIA_AIRPORTS.has(to)) || (US_AIRPORTS.has(to) && ASIA_AIRPORTS.has(from));
+  
+  if (isUS) return Math.floor(89 + ((from.charCodeAt(0) + to.charCodeAt(0)) % 40));
+  if (isUSEur) return Math.floor(349 + ((from.charCodeAt(0) + to.charCodeAt(0)) % 150));
+  if (isUSAsia) return Math.floor(549 + ((from.charCodeAt(0) + to.charCodeAt(0)) % 200));
+  return Math.floor(199 + ((from.charCodeAt(0) + to.charCodeAt(0)) % 100));
+}
+
+// Extract route from tags or title
+function getRouteFromPost(post, isRu) {
+  const title = isRu ? post.title_ru : post.title_en;
+  const tags = post.tags || [];
+  
+  // Try to find matching route from POPULAR_ROUTES
+  for (const route of POPULAR_ROUTES) {
+    const fromCity = isRu ? route.fromCity_ru : route.fromCity_en;
+    const toCity = isRu ? route.toCity_ru : route.toCity_en;
+    if (title.toLowerCase().includes(fromCity.toLowerCase()) && title.toLowerCase().includes(toCity.toLowerCase())) {
+      return route;
+    }
+  }
+  
+  // Try by tags
+  for (const tag of tags) {
+    for (const route of POPULAR_ROUTES) {
+      const fromCity = isRu ? route.fromCity_ru : route.fromCity_en;
+      const toCity = isRu ? route.toCity_ru : route.toCity_en;
+      if (tag.toLowerCase().includes(fromCity.toLowerCase()) || tag.toLowerCase().includes(toCity.toLowerCase())) {
+        return route;
+      }
+    }
+  }
+  
+  return null;
+}
+
+// Get related routes for a post
+function getRelatedRoutesForPost(post, isRu, count = 3) {
+  const tags = post.tags || [];
+  const routes = [];
+  
+  for (const route of POPULAR_ROUTES) {
+    if (routes.length >= count) break;
+    const fromCity = isRu ? route.fromCity_ru : route.fromCity_en;
+    const toCity = isRu ? route.toCity_ru : route.toCity_en;
+    
+    for (const tag of tags) {
+      if (tag.toLowerCase().includes(fromCity.toLowerCase()) || 
+          tag.toLowerCase().includes(toCity.toLowerCase()) ||
+          tag.toLowerCase().includes('flights')) {
+        if (!routes.find(r => r.from === route.from && r.to === route.to)) {
+          routes.push(route);
+        }
+        break;
+      }
+    }
+  }
+  
+  // Fallback: return first N routes if no matches
+  if (routes.length === 0) {
+    return POPULAR_ROUTES.slice(0, count);
+  }
+  
+  return routes;
+}
 
 const TP_MARKER = '681967';
 const BOOKING_AID = '2709056';
 
-function ContentRenderer({ content, lang }) {
-  return content.map((block, i) => {
+function InlineCTA({ post, isRu }) {
+  const route = getRouteFromPost(post, isRu);
+  
+  if (route) {
+    const fromCity = isRu ? route.fromCity_ru : route.fromCity_en;
+    const toCity = isRu ? route.toCity_ru : route.toCity_en;
+    const price = getDisplayPrice(route.from, route.to);
+    
+    return (
+      <Paper elevation={2} sx={{ my: 3, p: 3, bgcolor: '#f8f9fa', borderLeft: '4px solid #FF6B00' }}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center" justifyContent="space-between">
+          <Box>
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+              <LocalOfferIcon color="primary" />
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                {isRu ? `💡 Ищете билеты ${fromCity} → ${toCity}?` : `💡 Looking for flights ${fromCity} → ${toCity}?`}
+              </Typography>
+            </Stack>
+            <Typography variant="body2" color="text.secondary">
+              {isRu 
+                ? `Сравните цены на Aviasales — найдено от $${price}`
+                : `Compare prices on Aviasales — found from $${price}`}
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            size="large"
+            endIcon={<OpenInNewIcon />}
+            href={getAviasalesLink(route.from, route.to, isRu ? 'ru' : 'en', 'blog_inline')}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => trackClick('aviasales', 'blog_inline', `${route.from}-${route.to}`)}
+            sx={{
+              bgcolor: '#FF6B00',
+              '&:hover': { bgcolor: '#E55A00' },
+              px: 4,
+              fontWeight: 600,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {isRu ? 'СРАВНИТЬ ЦЕНЫ →' : 'COMPARE PRICES →'}
+          </Button>
+        </Stack>
+      </Paper>
+    );
+  }
+  
+  // Generic CTA if no route found
+  return (
+    <Paper elevation={2} sx={{ my: 3, p: 3, bgcolor: '#f8f9fa', borderLeft: '4px solid #FF6B00' }}>
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center" justifyContent="space-between">
+        <Box>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+            {isRu ? '💡 Ищете дешёвые авиабилеты?' : '💡 Looking for cheap flights?'}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {isRu 
+              ? 'Сравните цены на 200+ направлений через Aviasales'
+              : 'Compare prices on 200+ routes via Aviasales'}
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          size="large"
+          component={RouterLink}
+          to="/"
+          sx={{
+            bgcolor: '#FF6B00',
+            '&:hover': { bgcolor: '#E55A00' },
+            px: 4,
+            fontWeight: 600,
+          }}
+        >
+          {isRu ? 'НАЙТИ БИЛЕТЫ →' : 'FIND FLIGHTS →'}
+        </Button>
+      </Stack>
+    </Paper>
+  );
+}
+
+function EndCTA({ post, isRu }) {
+  const routes = getRelatedRoutesForPost(post, isRu, 3);
+  
+  return (
+    <Box sx={{ mt: 4, mb: 2 }}>
+      <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+        {isRu ? '✈️ Нашли полезным? Посмотрите билеты по этому направлению:' : '✈️ Found this helpful? Check flights for this route:'}
+      </Typography>
+      <Grid container spacing={2}>
+        {routes.map((route) => {
+          const fromCity = isRu ? route.fromCity_ru : route.fromCity_en;
+          const toCity = isRu ? route.toCity_ru : route.toCity_en;
+          const price = getDisplayPrice(route.from, route.to);
+          
+          return (
+            <Grid item xs={12} sm={4} key={`${route.from}-${route.to}`}>
+              <Card variant="outlined" sx={{ height: '100%' }}>
+                <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                    {fromCity} → {toCity}
+                  </Typography>
+                  <Typography variant="h6" color="success.main" sx={{ fontWeight: 600, mb: 1 }}>
+                    ${price}
+                  </Typography>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    fullWidth
+                    href={getAviasalesLink(route.from, route.to, isRu ? 'ru' : 'en', 'blog_end')}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    endIcon={<OpenInNewIcon />}
+                    onClick={() => trackClick('aviasales', 'blog_end', `${route.from}-${route.to}`)}
+                    sx={{ bgcolor: '#00C853', '&:hover': { bgcolor: '#00B548' } }}
+                  >
+                    {isRu ? 'Смотреть' : 'View'}
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
+          );
+        })}
+      </Grid>
+    </Box>
+  );
+}
+
+function ContentRenderer({ content, lang, post, isRu }) {
+  let paragraphCount = 0;
+  const elements = [];
+  
+  content.forEach((block, i) => {
     switch (block.type) {
       case 'h2':
-        return <Typography key={i} variant="h5" component="h2" sx={{ mt: 3, mb: 1, fontWeight: 600 }}>{block.text}</Typography>;
+        elements.push(<Typography key={i} variant="h5" component="h2" sx={{ mt: 3, mb: 1, fontWeight: 600 }}>{block.text}</Typography>);
+        break;
       case 'p':
-        return <Typography key={i} variant="body1" sx={{ mb: 2, lineHeight: 1.8 }}>{block.text}</Typography>;
+        paragraphCount++;
+        elements.push(<Typography key={i} variant="body1" sx={{ mb: 2, lineHeight: 1.8 }}>{block.text}</Typography>);
+        // Insert inline CTA after 3rd paragraph
+        if (paragraphCount === 3) {
+          elements.push(<InlineCTA key={`cta-${i}`} post={post} isRu={isRu} />);
+        }
+        break;
       case 'ul':
-        return (
+        elements.push(
           <Box key={i} component="ul" sx={{ mb: 2, pl: 2 }}>
             {block.items.map((item, j) => (
               <li key={j}><Typography variant="body1" sx={{ lineHeight: 1.8 }}>{item}</Typography></li>
             ))}
           </Box>
         );
+        break;
       case 'cta':
-        return (
+        elements.push(
           <Button key={i} component={RouterLink} to={block.link} variant="contained" size="small"
             startIcon={<FlightTakeoffIcon />}
             sx={{ mb: 2, textTransform: 'none', borderRadius: 999 }}>
             {block.text}
           </Button>
         );
+        break;
       case 'cta-hotel': {
         const link = `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(block.city)}&aid=${BOOKING_AID}`;
-        return (
+        elements.push(
           <Button key={i} href={link} target="_blank" rel="noopener" variant="outlined" size="small"
             startIcon={<HotelIcon />} endIcon={<OpenInNewIcon sx={{ fontSize: 14 }} />}
             onClick={() => trackClick({ type: 'hotels', destination: block.city })}
@@ -49,11 +278,14 @@ function ContentRenderer({ content, lang }) {
             {block.text}
           </Button>
         );
+        break;
       }
       default:
-        return null;
+        break;
     }
   });
+  
+  return elements;
 }
 
 export default function BlogPost() {
@@ -118,7 +350,10 @@ export default function BlogPost() {
           {post.tags.map((tag) => <Chip key={tag} label={tag} size="small" />)}
         </Stack>
 
-        <ContentRenderer content={content} lang={effectiveLang} />
+        <ContentRenderer content={content} lang={effectiveLang} post={post} isRu={isRu} />
+
+        {/* End CTA with related routes */}
+        <EndCTA post={post} isRu={isRu} />
 
         {/* Subscribe block */}
         <SubscribeBlock />
