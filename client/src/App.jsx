@@ -496,6 +496,7 @@ export default function App() {
                         variant="outlined"
                         sx={{
                           position: 'relative',
+                          minHeight: '90px',
                           '&:hover': { boxShadow: 2 },
                           cursor: 'pointer',
                         }}
@@ -515,7 +516,15 @@ export default function App() {
                           }}
                         />
                         <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-                          <Typography sx={{ fontWeight: 500, mb: 0.5, fontSize: '13px', lineHeight: 1.3 }}>
+                          <Typography sx={{
+                            fontWeight: 500,
+                            mb: 0.5,
+                            fontSize: '13px',
+                            lineHeight: 1.3,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}>
                             {fromCity} → {toCity}
                           </Typography>
                           <Typography variant="h6" color="success.main" sx={{ fontWeight: 700 }}>
