@@ -254,25 +254,69 @@ export default function App() {
       </AppBar>
 
       <Container maxWidth="md" sx={{ py: 4 }}>
-        <Typography
-          variant="h3"
-          component="h1"
-          sx={{
-            mb: 1,
-            fontWeight: 700,
-            fontSize: { xs: '1.8rem', sm: '2.4rem', md: '2.8rem' },
-            lineHeight: 1.2,
-          }}
-        >
-          {lang === 'ru'
-            ? 'Сравни цены на авиабилеты и найди самый дешёвый рейс'
-            : 'Compare flight prices and find the cheapest fare'}
-        </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 3, fontSize: '1.1rem' }}>
-          {lang === 'ru'
-            ? '200+ маршрутов по всему миру. Реальные цены, советы по экономии и AI-планировщик путешествий.'
-            : '200+ routes worldwide. Real prices, money-saving tips, and an AI travel planner.'}
-        </Typography>
+        {/* HERO SECTION — Value Proposition */}
+        <Box sx={{ textAlign: 'center', mb: 4 }}>
+          <Typography
+            variant="h3"
+            component="h1"
+            sx={{
+              mb: 2,
+              fontWeight: 800,
+              fontSize: { xs: '2rem', sm: '2.8rem', md: '3.2rem' },
+              lineHeight: 1.1,
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
+            {lang === 'ru'
+              ? 'Найди дешёвые авиабилеты за 30 секунд'
+              : 'Find cheap flights in 30 seconds'}
+          </Typography>
+          <Typography variant="h6" color="text.secondary" sx={{ mb: 3, fontWeight: 400 }}>
+            {lang === 'ru'
+              ? '✈️ 200+ маршрутов • 💰 Цены от $29 • 🤖 AI-планировщик'
+              : '✈️ 200+ routes • 💰 From $29 • 🤖 AI planner'}
+          </Typography>
+          
+          {/* Quick Action Buttons — Top 3 Routes */}
+          <Stack 
+            direction={{ xs: 'column', sm: 'row' }} 
+            spacing={2} 
+            justifyContent="center"
+            sx={{ mb: 2 }}
+          >
+            {[
+              { from: 'LAX', to: 'JFK', price: 89, fromCity: lang === 'ru' ? 'Лос-Анджелес' : 'Los Angeles', toCity: lang === 'ru' ? 'Нью-Йорк' : 'New York' },
+              { from: 'LHR', to: 'CDG', price: 49, fromCity: lang === 'ru' ? 'Лондон' : 'London', toCity: lang === 'ru' ? 'Париж' : 'Paris' },
+              { from: 'JFK', to: 'LHR', price: 299, fromCity: lang === 'ru' ? 'Нью-Йорк' : 'New York', toCity: lang === 'ru' ? 'Лондон' : 'London' },
+            ].map((route) => (
+              <Button
+                key={`${route.from}-${route.to}`}
+                variant="contained"
+                size="large"
+                href={getAviasalesLink(route.from, route.to, lang, 'home_quick')}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackClick('aviasales', 'home_quick', `${route.from}-${route.to}`)}
+                sx={{
+                  bgcolor: '#FF6B00',
+                  '&:hover': { bgcolor: '#E55A00', transform: 'translateY(-2px)' },
+                  px: 3,
+                  py: 1.5,
+                  fontWeight: 600,
+                  boxShadow: '0 4px 12px rgba(255, 107, 0, 0.3)',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {route.fromCity} → {route.toCity} ${route.price}
+              </Button>
+            ))}
+          </Stack>
+          <Typography variant="caption" color="text.secondary">
+            {lang === 'ru' ? 'Популярные направления — кликни и найди билет' : 'Popular routes — click to find tickets'}
+          </Typography>
+        </Box>
 
         <Tabs
           value={tab}
@@ -584,6 +628,42 @@ export default function App() {
           </Button>
         </Stack>
       </Container>
+
+      {/* STICKY MOBILE CTA */}
+      <Box
+        sx={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1000,
+          display: { xs: 'block', sm: 'none' },
+          bgcolor: 'background.paper',
+          borderTop: '2px solid #FF6B00',
+          boxShadow: '0 -4px 12px rgba(0,0,0,0.1)',
+        }}
+      >
+        <Container maxWidth="md" sx={{ py: 1.5 }}>
+          <Button
+            variant="contained"
+            size="large"
+            fullWidth
+            href="https://www.aviasales.ru/?utm_source=travelsearch.now&utm_medium=home_sticky_mobile&utm_campaign=funnel_v1&marker=681967"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => trackClick('aviasales', 'home_sticky_mobile', 'generic')}
+            sx={{
+              bgcolor: '#00C853',
+              '&:hover': { bgcolor: '#00B548' },
+              py: 1.5,
+              fontWeight: 600,
+              fontSize: '1.1rem',
+            }}
+          >
+            {lang === 'ru' ? '✈️ Найти дешёвый билет' : '✈️ Find cheap flights'}
+          </Button>
+        </Container>
+      </Box>
     </>
   );
 }
