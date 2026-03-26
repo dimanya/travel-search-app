@@ -150,6 +150,7 @@ export default function App() {
   const { t, lang, setLang } = useI18n();
   const [rows, setRows] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
+  const [hasSearched, setHasSearched] = React.useState(false);
   const [filters, setFilters] = React.useState({ from: '', to: '', date: '' });
   const [fromInput, setFromInput] = React.useState('');
   const [toInput, setToInput] = React.useState('');
@@ -175,6 +176,7 @@ export default function App() {
     }, 100);
     // Auto-trigger search
     setLoading(true);
+    setHasSearched(true);
     api
       .get('/api/trips', { params: { from, to } })
       .then(({ data }) => setRows(data))
@@ -184,6 +186,7 @@ export default function App() {
 
   const fetchTrips = async () => {
     setLoading(true);
+    setHasSearched(true);
     try {
       const params = {};
       if (filters.from) params.from = filters.from;
@@ -431,14 +434,17 @@ export default function App() {
                   </Button>
                 </Stack>
 
-                <Divider sx={{ mb: 2 }} />
-
-                {loading ? (
-                  <Stack alignItems="center" sx={{ py: 4 }}>
-                    <CircularProgress />
-                  </Stack>
-                ) : (
-                  <TripsTable rows={rows} />
+                {hasSearched && (
+                  <>
+                    <Divider sx={{ mb: 2 }} />
+                    {loading ? (
+                      <Stack alignItems="center" sx={{ py: 4 }}>
+                        <CircularProgress />
+                      </Stack>
+                    ) : (
+                      <TripsTable rows={rows} />
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
