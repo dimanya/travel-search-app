@@ -331,7 +331,7 @@ export default function App() {
         {tab === 0 && (
           <Box sx={{ mt: 1 }}>
             <Card ref={searchCardRef} elevation={2} sx={{ mb: 3 }}>
-              <CardHeader title={t.searchTitle} subheader={t.searchSub} />
+              <CardHeader title={t.searchTitle} />
               <CardContent>
                 <Stack
                   direction={{ xs: 'column', sm: 'row' }}
@@ -373,7 +373,7 @@ export default function App() {
                     freeSolo
                     size="small"
                     renderInput={(params) => (
-                      <TextField {...params} label={t.fromLabel} placeholder="LAX, New York..." />
+                      <TextField {...params} label={t.fromLabel} placeholder={lang === 'ru' ? 'Город или аэропорт' : 'City or airport'} />
                     )}
                     sx={{ minWidth: 200 }}
                   />
@@ -411,7 +411,7 @@ export default function App() {
                     freeSolo
                     size="small"
                     renderInput={(params) => (
-                      <TextField {...params} label={t.toLabel} placeholder="JFK, London..." />
+                      <TextField {...params} label={t.toLabel} placeholder={lang === 'ru' ? 'Город или аэропорт' : 'City or airport'} />
                     )}
                     sx={{ minWidth: 200 }}
                   />
