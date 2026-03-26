@@ -487,7 +487,10 @@ export default function App() {
                     gap: 2,
                   }}
                 >
-                  {getCheapestRoutes(6).map((r) => (
+                  {getCheapestRoutes(6).map((r) => {
+                    const fromCity = lang === 'ru' ? r.fromCity_ru : r.fromCity_en;
+                    const toCity = lang === 'ru' ? r.toCity_ru : r.toCity_en;
+                    return (
                       <Card
                         key={`hot-${r.from}-${r.to}`}
                         variant="outlined"
@@ -512,8 +515,8 @@ export default function App() {
                           }}
                         />
                         <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-                          <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5, fontSize: '0.95rem' }}>
-                            {r.from} → {r.to}
+                          <Typography sx={{ fontWeight: 500, mb: 0.5, fontSize: '13px', lineHeight: 1.3 }}>
+                            {fromCity} → {toCity}
                           </Typography>
                           <Typography variant="h6" color="success.main" sx={{ fontWeight: 700 }}>
                             ${r.price}
@@ -523,7 +526,8 @@ export default function App() {
                           </Typography>
                         </CardContent>
                       </Card>
-                    ))}
+                    );
+                  })}
                 </Box>
               </CardContent>
             </Card>
