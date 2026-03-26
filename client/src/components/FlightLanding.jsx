@@ -276,6 +276,48 @@ export default function FlightLanding() {
           </CardContent>
         </Card>
 
+        {/* HOTELS BLOCK — Hotellook widget */}
+        <Paper
+          elevation={2}
+          sx={{
+            mb: 3,
+            p: 3,
+            bgcolor: '#f5f5f5',
+            borderLeft: '4px solid #2196F3',
+          }}
+        >
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center" justifyContent="space-between">
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
+                {effectiveLang === 'ru' ? `🏨 Отели в ${info.toCity}` : `🏨 Hotels in ${info.toCity}`}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {effectiveLang === 'ru'
+                  ? `Найди жильё рядом с аэропортом ${to}`
+                  : `Find accommodation near ${to} airport`}
+              </Typography>
+            </Box>
+            <Button
+              variant="contained"
+              size="large"
+              endIcon={<OpenInNewIcon />}
+              href={`https://www.hotellook.com/hotels?destination=${encodeURIComponent(info.toCity)}&marker=681967&utm_source=travelsearch.now&utm_medium=route_hotels&utm_campaign=funnel_v1`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackClick('hotellook', 'route_hotels', `${from}-${to}`)}
+              sx={{
+                bgcolor: '#2196F3',
+                '&:hover': { bgcolor: '#1976D2' },
+                px: 4,
+                fontWeight: 600,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {effectiveLang === 'ru' ? 'НАЙТИ ОТЕЛЬ →' : 'FIND HOTELS →'}
+            </Button>
+          </Stack>
+        </Paper>
+
         {/* SEO content block */}
         <Box sx={{ mt: 4 }}>
           <Typography variant="h5" component="h2" sx={{ mb: 2 }}>

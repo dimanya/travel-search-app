@@ -5,7 +5,6 @@ import {
   Container, Typography, AppBar, Toolbar, Button, Stack, Box, Chip, Divider, Paper, Card, CardContent, Grid,
 } from '@mui/material';
 import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
-import HotelIcon from '@mui/icons-material/Hotel';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
@@ -104,7 +103,6 @@ function getRelatedRoutesForPost(post, isRu, count = 3) {
 }
 
 const TP_MARKER = '681967';
-const BOOKING_AID = '2709056';
 
 function InlineCTA({ post, isRu, variant = 'primary' }) {
   const route = getRouteFromPost(post, isRu);
@@ -302,18 +300,7 @@ function ContentRenderer({ content, lang, post, isRu }) {
           </Button>
         );
         break;
-      case 'cta-hotel': {
-        const link = `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(block.city)}&aid=${BOOKING_AID}`;
-        elements.push(
-          <Button key={i} href={link} target="_blank" rel="noopener" variant="outlined" size="small"
-            startIcon={<HotelIcon />} endIcon={<OpenInNewIcon sx={{ fontSize: 14 }} />}
-            onClick={() => trackClick({ type: 'hotels', destination: block.city })}
-            sx={{ mb: 2, textTransform: 'none', borderRadius: 999 }}>
-            {block.text}
-          </Button>
-        );
-        break;
-      }
+
       default:
         break;
     }

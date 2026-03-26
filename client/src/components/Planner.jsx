@@ -28,7 +28,6 @@ import { useI18n } from '../i18n';
 
 /* ========= Affiliate & links helpers ========= */
 const TP_MARKER = import.meta.env.VITE_TP_MARKER || '681967';
-const BOOKING_AID = import.meta.env.VITE_BOOKING_AID || '2709056';
 
 const mapsLink = (q) =>
   `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q || '')}`;
@@ -41,8 +40,7 @@ const flightsLink = (origin, dest) => {
 };
 
 const hotelsLink = (city) => {
-  const base = `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(city || '')}`;
-  return BOOKING_AID ? `${base}&aid=${BOOKING_AID}` : base;
+  return `https://search.hotellook.com/?destination=${encodeURIComponent(city || '')}&marker=${TP_MARKER}`;
 };
 
 /* ========= URL sharing helpers ========= */
