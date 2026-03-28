@@ -486,7 +486,53 @@ export default function FlightLanding() {
         </Box>
       )}
 
-      {/* STICKY CTA BAR — appears after scroll */}
+      {/* MOBILE TOP STICKY BAR — appears after scroll on mobile */}
+      <Paper
+        elevation={3}
+        sx={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1100,
+          display: { xs: 'block', sm: 'none' },
+          transform: showStickyBar ? 'translateY(0)' : 'translateY(-100%)',
+          transition: 'transform 0.3s ease-in-out',
+          bgcolor: 'background.paper',
+          borderBottom: '2px solid #FF6B00',
+        }}
+      >
+        <Container maxWidth="md" sx={{ py: 0.75 }}>
+          <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+            <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.7rem', lineHeight: 1.2 }}>
+              {effectiveLang === 'ru'
+                ? `${info.fromCity} → ${info.toCity}\nот $${displayPrice}`
+                : `${info.fromCity} → ${info.toCity}\nfrom $${displayPrice}`}
+            </Typography>
+            <Button
+              variant="contained"
+              size="small"
+              href={getAviasalesLink(from, to, effectiveLang, 'route_sticky_top')}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackClick('aviasales', 'route_sticky_top', `${from}-${to}`)}
+              sx={{
+                bgcolor: '#00C853',
+                '&:hover': { bgcolor: '#00B548' },
+                px: 1.5,
+                py: 0.4,
+                fontWeight: 600,
+                fontSize: '0.7rem',
+                minWidth: 'auto',
+              }}
+            >
+              {effectiveLang === 'ru' ? 'КУПИТЬ →' : 'BUY →'}
+            </Button>
+          </Stack>
+        </Container>
+      </Paper>
+
+      {/* DESKTOP BOTTOM STICKY BAR — appears after scroll on desktop */}
       <Paper
         elevation={4}
         sx={{
@@ -495,6 +541,7 @@ export default function FlightLanding() {
           left: 0,
           right: 0,
           zIndex: 1000,
+          display: { xs: 'none', sm: 'block' },
           transform: showStickyBar ? 'translateY(0)' : 'translateY(100%)',
           transition: 'transform 0.3s ease-in-out',
           bgcolor: 'background.paper',
@@ -503,7 +550,7 @@ export default function FlightLanding() {
       >
         <Container maxWidth="md" sx={{ py: 1.5 }}>
           <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
-            <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+            <Box>
               <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                 {effectiveLang === 'ru'
                   ? `✈ ${info.fromCity} → ${info.toCity} от $${displayPrice}`
@@ -522,11 +569,9 @@ export default function FlightLanding() {
               sx={{
                 bgcolor: '#00C853',
                 '&:hover': { bgcolor: '#00B548' },
-                px: { xs: 3, sm: 6 },
+                px: 6,
                 py: 1,
                 fontWeight: 600,
-                fontSize: { xs: '0.9rem', sm: '1rem' },
-                flex: { xs: 1, sm: 'none' },
               }}
             >
               {effectiveLang === 'ru' ? 'НАЙТИ БИЛЕТ →' : 'FIND TICKETS →'}
