@@ -6,3 +6,4 @@ npm-debug.log*
 client/.vite/
 logs/
 *.log
+.vercel
